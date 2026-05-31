@@ -3,7 +3,7 @@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { registerUser } from "@/actions/auth-actions"
+import { registerUser } from "@/server/actions/auth.action"
 import { useState } from "react"
 import Link from "next/link"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -22,20 +22,20 @@ export default function RegisterPage() {
       </div>
 
       {/* Left Column - Brand Panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center p-12" style={{ backgroundColor: "var(--secondary-container)" }}>
-        <div className="absolute top-0 left-0 w-96 h-96 rounded-full opacity-20" style={{ backgroundColor: "var(--primary)", filter: "blur(80px)", transform: "translate(-30%, -30%)" }} />
-        <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full opacity-15" style={{ backgroundColor: "var(--tertiary)", filter: "blur(60px)", transform: "translate(30%, 30%)" }} />
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center p-12" style={{ backgroundColor: "var(--surface-container-low)" }}>
+        <div className="absolute top-0 left-0 w-96 h-96 rounded-full opacity-10" style={{ backgroundColor: "var(--primary)", filter: "blur(80px)", transform: "translate(-30%, -30%)" }} />
+        <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full opacity-10" style={{ backgroundColor: "var(--secondary)", filter: "blur(60px)", transform: "translate(30%, 30%)" }} />
 
         <div className="z-10 w-full max-w-lg space-y-8">
           <div className="space-y-4">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: "var(--primary)", color: "var(--on-primary)" }}>
-              ✦ Get started free
+            <span className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-semibold" style={{ backgroundColor: "var(--secondary-container)", color: "var(--on-secondary-container)" }}>
+              ✦ Start Serving Better
             </span>
-            <h2 className="text-4xl font-bold leading-tight" style={{ color: "var(--on-secondary-container)", letterSpacing: "-0.02em" }}>
-              Your workspace, up and running in minutes.
+            <h2 className="text-4xl font-bold leading-tight" style={{ color: "var(--on-surface)", letterSpacing: "-0.02em" }}>
+              Modernize the way customers wait, book, and get served.
             </h2>
-            <p className="leading-relaxed" style={{ color: "var(--on-secondary-container)", opacity: 0.75 }}>
-              Configure service desks, set wait thresholds, and start serving customers with a calm, organised experience.
+            <p className="leading-relaxed" style={{ color: "var(--on-surface-variant)", opacity: 0.85 }}>
+              Create your HiQueue workspace today. Set up service desks, issue tickets, and bring organic hospitality to your queue management.
             </p>
           </div>
 
@@ -49,7 +49,7 @@ export default function RegisterPage() {
                 <div className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: "var(--primary)", color: "var(--on-primary)" }}>
                   {item.icon}
                 </div>
-                <span className="text-sm font-medium" style={{ color: "var(--on-secondary-container)" }}>{item.text}</span>
+                <span className="text-sm font-medium" style={{ color: "var(--on-surface)" }}>{item.text}</span>
               </div>
             ))}
           </div>
@@ -89,7 +89,7 @@ export default function RegisterPage() {
               setIsLoading(true)
               setError(null)
               const res = await registerUser(formData)
-              if (res?.error) {
+              if (res && !res.success) {
                 setError(res.error)
                 setIsLoading(false)
               }

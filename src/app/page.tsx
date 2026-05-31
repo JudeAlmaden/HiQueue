@@ -1,124 +1,119 @@
 import Link from "next/link"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Layers, ArrowRight, CheckCircle, Clock, Shield } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Layers, ArrowRight, ListOrdered, Monitor, Users, LayoutDashboard } from "lucide-react"
+import { auth } from "@/auth"
 
-export default function Home() {
+export default async function Home() {
+  const session = await auth()
+  const isLoggedIn = !!session?.user
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 transition-colors duration-200">
-      
-      {/* Navbar */}
-      <header className="sticky top-0 z-50 w-full border-b border-slate-200/60 dark:border-zinc-800/60 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white font-bold shadow-md shadow-indigo-500/20">
-              <Layers className="h-5 w-5" />
-            </div>
-            <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-indigo-600 dark:from-zinc-100 dark:to-indigo-400 bg-clip-text text-transparent">
-              HiQueue
-            </span>
+    <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-200">
+
+      {/* Nav */}
+      <header className="flex items-center justify-between px-6 py-4 border-b border-border">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-on-primary shadow-md">
+            <Layers className="h-5 w-5" />
           </div>
-          
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <Link 
-              href="/login"
-              className="text-sm font-semibold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
-            >
-              Sign In
+          <span className="text-lg font-bold tracking-tight text-foreground">HiQueue</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          {isLoggedIn ? (
+            <Link href="/dashboard">
+              <Button size="sm" className="gap-1.5">
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                Dashboard
+              </Button>
             </Link>
-            <Link 
-              href="/register"
-              className="text-sm font-semibold px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white shadow-md shadow-indigo-600/10 transition-all"
-            >
-              Get Started
-            </Link>
-          </div>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="ghost" size="sm">Sign in</Button>
+              </Link>
+              <Link href="/register">
+                <Button size="sm">Get started</Button>
+              </Link>
+            </>
+          )}
         </div>
       </header>
 
-      {/* Hero Section */}
-      <main className="flex-grow flex flex-col justify-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
-        <div className="grid gap-12 lg:grid-cols-12 lg:gap-8 items-center">
-          
-          <div className="lg:col-span-7 space-y-8 text-center lg:text-left">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-550/10 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-250 dark:border-indigo-500/20">
-              ⚡ Intelligent Queue Flow
-            </div>
-            
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
-              Optimize customer flow with{" "}
-              <span className="bg-gradient-to-r from-indigo-600 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                real-time queuing
-              </span>
-            </h1>
-            
-            <p className="text-lg text-slate-500 dark:text-zinc-400 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              HiQueue is a modern SaaS platform designed to eliminate queues, streamline service desks, and improve operational transparency for both agents and visitors.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Link 
-                href="/register"
-                className="inline-flex items-center justify-center gap-2 text-base font-semibold px-6 py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white shadow-md shadow-indigo-600/10 transition-all"
-              >
-                <span>Launch Workspace</span>
-                <ArrowRight className="h-4 w-4" />
+      {/* Hero */}
+      <main className="flex-1 flex flex-col items-center justify-center text-center px-6 py-24 gap-6 max-w-3xl mx-auto w-full">
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-primary text-primary-foreground">
+          ✦ Queue management, simplified
+        </span>
+
+        <h1 className="text-5xl sm:text-6xl font-bold tracking-tight leading-tight text-foreground" style={{ letterSpacing: "-0.03em" }}>
+          Serve people better,<br />one ticket at a time.
+        </h1>
+
+        <p className="text-lg text-muted-foreground max-w-xl leading-relaxed">
+          HiQueue helps businesses manage walk-in queues, issue tickets, and call customers — without the chaos.
+        </p>
+
+        <div className="flex items-center gap-3 mt-2">
+          {isLoggedIn ? (
+            <Link href="/dashboard">
+              <Button size="lg" className="rounded-full px-6 gap-2">
+                Go to Dashboard <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          ) : (
+            <>
+              <Link href="/register">
+                <Button size="lg" className="rounded-full px-6 gap-2">
+                  Start for free <ArrowRight className="h-4 w-4" />
+                </Button>
               </Link>
-              <Link 
-                href="/login"
-                className="inline-flex items-center justify-center text-base font-semibold px-6 py-3 rounded-lg border border-slate-250 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 transition-all"
-              >
-                Agent Portal
+              <Link href="/login">
+                <Button variant="outline" size="lg" className="rounded-full px-6">
+                  Sign in
+                </Button>
               </Link>
-            </div>
-          </div>
-
-          {/* Graphical Mockup / Feature Showcase */}
-          <div className="lg:col-span-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-1">
-            <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 shadow-xl space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-650 dark:text-indigo-400">
-                  <Clock className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm">Real-time Wait Tracking</h3>
-                  <p className="text-xs text-slate-400 dark:text-zinc-500">Live SMS & web alerts for visitors.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 shadow-xl space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-650 dark:text-indigo-400">
-                  <CheckCircle className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm">Multi-Desk Support</h3>
-                  <p className="text-xs text-slate-400 dark:text-zinc-500">Call, transfer, or complete tokens instantly.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 shadow-xl space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-650 dark:text-indigo-400">
-                  <Shield className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm">Role-Based Authentication</h3>
-                  <p className="text-xs text-slate-400 dark:text-zinc-500">Secure agent access via NextAuth & SQLite.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
+            </>
+          )}
         </div>
       </main>
 
+      {/* Features */}
+      <section className="border-t border-border px-6 py-16">
+        <div className="max-w-4xl mx-auto grid sm:grid-cols-3 gap-8">
+          {[
+            {
+              icon: ListOrdered,
+              title: "Live Queues",
+              desc: "Create queues for any service desk. Issue numbered tickets and call customers in order.",
+            },
+            {
+              icon: Monitor,
+              title: "Display Screens",
+              desc: "Show the current ticket number on a TV or monitor in your waiting area.",
+            },
+            {
+              icon: Users,
+              title: "Multi-staff",
+              desc: "Add staff members to your organization and assign them to specific counters.",
+            },
+          ].map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="flex flex-col gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Icon className="h-5 w-5" />
+              </div>
+              <h3 className="font-semibold text-foreground">{title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="py-8 border-t border-slate-200/60 dark:border-zinc-800/60 bg-white dark:bg-zinc-900/40 transition-colors text-center text-xs text-slate-400 dark:text-zinc-500">
-        <p>© 2026 HiQueue. All rights reserved.</p>
+      <footer className="border-t border-border px-6 py-5 text-center text-xs text-muted-foreground">
+        © {new Date().getFullYear()} HiQueue. All rights reserved.
       </footer>
+
     </div>
   )
 }

@@ -1,0 +1,14 @@
+model Service {
+  id      String @id @default(cuid())
+  queueId String
+  queue   Queue  @relation(fields: [queueId], references: [id])
+
+  name               String
+  prefix             String
+  avgDurationMinutes Int?
+
+  isActive Boolean @default(true)
+
+  tickets Ticket[]
+  counters Counter[]
+}

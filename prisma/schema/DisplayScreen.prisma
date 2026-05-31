@@ -1,0 +1,12 @@
+model DisplayScreen {
+  id      String @id @default(cuid())
+  queueId String
+  queue   Queue  @relation(fields: [queueId], references: [id])
+
+  name String
+
+  layout String @default("{}") // Storing JSON as string
+  theme  String @default("{}") // Storing JSON as string
+
+  isActive Boolean @default(true)
+}

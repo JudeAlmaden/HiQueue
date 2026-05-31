@@ -20,7 +20,8 @@
     "email": "string",
     "passwordHash": "string",
 
-    "role": "owner | admin | staff", // permission level
+    "role": "owner | admin | staff", // permission level: owners vs created users
+    "createdById": "string", // ID of the owner/admin who created this user
 
     "isActive": "boolean",
     "createdAt": "datetime"
@@ -35,6 +36,8 @@
 
     "name": "string", // e.g. "Main Clinic Queue"
     "description": "string",
+    
+    "passcode": "string", // Hashed password/code to protect queue access
 
     // UI customization per queue (VERY IMPORTANT for your idea)
     "theme": {

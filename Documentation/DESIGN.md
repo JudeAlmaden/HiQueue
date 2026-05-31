@@ -119,13 +119,36 @@ The target audience includes both service providers who want to project a premiu
 
 ## Colors
 
-The palette is rooted in a "Light and Green" philosophy, using botanical tones to induce a sense of tranquility. 
+The design system supports multiple overarching themes, with "Organic Hospitality" acting as the default. Users can select different themes that override the base CSS variables while maintaining the same semantic color aliases.
 
+### 1. Organic Hospitality (Default Light & Dark)
+Rooted in a "Light and Green" philosophy, using botanical tones to induce a sense of tranquility.
 - **Primary (Sage):** Used for main actions and brand presence. It is muted enough to remain calm but distinct enough for hierarchy.
 - **Secondary (Mint):** Used for backgrounds of subtle components, progress bars, and success states.
 - **Tertiary (Forest):** Reserved for high-contrast text, iconography, and deep-state buttons to ensure accessibility.
-- **Neutral (Warm Off-White):** The primary canvas color. It is warmer than pure white to reduce eye strain and feel more "cozy."
-- **Functional Accents:** A soft terracotta is used for errors or alerts to maintain the organic feel without appearing aggressive.
+- **Neutral (Warm Off-White / Deep Moss):** The primary canvas color, reducing eye strain and feeling "cozy."
+- **Functional Accents:** A soft terracotta is used for errors or alerts to maintain the organic feel.
+
+### 2. Ocean Theme (`.theme-ocean`)
+A cool, water-inspired palette for a clean, clinical yet calming aesthetic.
+- **Primary:** Deep Sea Blue (`#0077b6`)
+- **Secondary:** Bright Cyan (`#00b4d8`)
+- **Tertiary:** Navy (`#023e8a`)
+- **Neutral:** Ice White and Light Blue backgrounds.
+
+### 3. Sunset Theme (`.theme-sunset`)
+Warm, inviting tones reminiscent of golden hour, providing an energetic but comforting environment.
+- **Primary:** Terracotta/Coral (`#e07a5f`)
+- **Secondary:** Sand/Orange (`#f4a261`)
+- **Tertiary:** Warm Brown (`#8f5d5d`)
+- **Neutral:** Warm cream and peach backgrounds.
+
+### 4. High Contrast Theme (`.theme-high-contrast`)
+An accessible, ultra-high-visibility theme ensuring maximum legibility.
+- **Primary:** Bright Yellow (`#ffff00`)
+- **Secondary:** Bright Cyan (`#00ffff`)
+- **Tertiary:** Magenta (`#ff00ff`)
+- **Neutral:** Pure Black background with Pure White text and borders.
 
 ## Typography
 
@@ -171,3 +194,4 @@ The shape language is consistently rounded to evoke comfort and safety.
 - **Queue Progress:** Represented by thick, rounded-cap lines or soft circular rings. The track should be a very light gray, and the progress should be Primary Sage.
 - **Lists:** List items are separated by whitespace and tonal changes rather than divider lines. Each list item feels like a "mini-card."
 - **Modals:** Use a heavy backdrop blur (12px) to keep the user focused on the task while maintaining the "glassy," airy feel of the system.
+- **Others:** Use shadcn components

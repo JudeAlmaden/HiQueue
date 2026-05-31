@@ -1,0 +1,21 @@
+model Queue {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  name        String
+  description String?
+  passcode    String? // Optional hashed password/code required for access
+
+  theme  String @default("{}") // Storing JSON as string for SQLite compatibility
+  layout String @default("{}") // Storing JSON as string for SQLite compatibility
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  services       Service[]
+  queueSessions  QueueSession[]
+  tickets        Ticket[]
+  counters       Counter[]
+  displayScreens DisplayScreen[]
+}

@@ -1,0 +1,11 @@
+// Base Prisma configuration — generator and datasource
+// Model definitions are in separate .prisma files in this directory.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}

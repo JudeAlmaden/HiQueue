@@ -1,0 +1,16 @@
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  /// JSON: theme class, CSS variables — editable from dashboard workspace settings (future)
+  portalTheme    String @default("{}")
+  /// JSON: welcome copy, logo URL, etc. — editable from dashboard workspace settings (future)
+  portalBranding String @default("{}")
+
+  memberships OrganizationMembership[]
+
+  queues        Queue[]
+  subscriptions Subscription[]
+}

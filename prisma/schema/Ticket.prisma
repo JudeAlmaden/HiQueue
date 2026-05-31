@@ -1,0 +1,33 @@
+model Ticket {
+  id String @id @default(cuid())
+
+  organizationId String
+  queueId        String
+  serviceId      String
+  queueSessionId String
+
+  queue        Queue        @relation(fields: [queueId], references: [id])
+  service      Service      @relation(fields: [serviceId], references: [id])
+  queueSession QueueSession @relation(fields: [queueSessionId], references: [id])
+
+  number Int
+  code   String
+
+  customer String @default("{}") // Storing JSON as string
+
+  status String @default("waiting") // "waiting", "serving", "hold", "skipped", "done", "no_show"
+
+  priority Int @default(0)
+
+  counterId String?
+  counter   Counter? @relation("CounterTickets", fields: [counterId], references: [id])
+
+  currentServingForCounter Counter? @relation("CounterCurrentTicket")
+
+  createdAt   DateTime  @default(now())
+  calledAt    DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  events TicketEvent[]
+}

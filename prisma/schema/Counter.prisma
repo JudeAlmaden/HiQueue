@@ -1,0 +1,16 @@
+model Counter {
+  id      String @id @default(cuid())
+  queueId String
+  queue   Queue  @relation(fields: [queueId], references: [id])
+
+  name            String
+  currentTicketId String? @unique
+  currentTicket   Ticket? @relation("CounterCurrentTicket", fields: [currentTicketId], references: [id])
+
+  tickets Ticket[] @relation("CounterTickets")
+
+  assignedStaff User[] @relation("StaffAssignments")
+  services      Service[]
+
+  isActive Boolean @default(true)
+}

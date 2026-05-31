@@ -1,0 +1,15 @@
+model QueueSession {
+  id      String @id @default(cuid())
+  queueId String
+  queue   Queue  @relation(fields: [queueId], references: [id])
+
+  date DateTime
+
+  status String @default("open") // "open", "closed"
+
+  currentNumber Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  tickets Ticket[]
+}

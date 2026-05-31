@@ -1,0 +1,134 @@
+"use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { createQueueAction } from "@/server/actions/queue.action"
+import { useToast } from "@/components/ui/toast"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { FormError } from "@/components/ui/form-error"
+import { X, Loader2 } from "lucide-react"
+
+interface Props {
+  organizationId: string
+  orgSlug: string
+  onClose: () => void
+}
+
+export function CreateQueueForm({ organizationId, orgSlug, onClose }: Props) {
+  const router = useRouter()
+  const toasts = useToast()
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError(null)
+
+    const formData = new FormData(e.currentTarget)
+    formData.set("organizationId", organizationId)
+    formData.set("orgSlug", orgSlug)
+
+    try {
+      const res = await createQueueAction(formData)
+      if (res.success) {
+        toasts.success("Queue created successfully!")
+        router.refresh()
+        onClose()
+      } else {
+        setError(res.error)
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/40 backdrop-blur-md animate-fade-in">
+      <div className="w-full max-w-md bg-card border border-border rounded-2xl shadow-xl overflow-hidden p-6 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border pb-3">
+          <h2 className="text-lg font-bold text-on-surface">Create New Queue</h2>
+          <button
+            onClick={onClose}
+            className="text-on-surface-variant hover:text-on-surface transition-colors p-1 rounded-full hover:bg-surface-low"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {error && <FormError message={error} />}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="name">Queue Name</Label>
+            <Input
+              id="name"
+              name="name"
+              type="text"
+              placeholder="E.g., Customer Support, Billing, Check-in"
+              className="rounded-xl h-11 border-0 bg-surface-container text-on-surface focus-visible:ring-2 outline outline-1 outline-outline-variant transition-all"
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="description">Description (Optional)</Label>
+            <textarea
+              id="description"
+              name="description"
+              placeholder="Describe what this queue manages..."
+              rows={3}
+              className="w-full p-3 rounded-xl bg-surface-container text-on-surface border-0 outline outline-1 outline-outline-variant text-sm focus-visible:ring-2 transition-all resize-none"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="passcode">Access Passcode (Optional)</Label>
+            <Input
+              id="passcode"
+              name="passcode"
+              type="text"
+              placeholder="E.g., 1234 (optional queue entry restriction)"
+              className="rounded-xl h-11 border-0 bg-surface-container text-on-surface focus-visible:ring-2 outline outline-1 outline-outline-variant transition-all"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 border-t border-border pt-4">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+              disabled={isLoading}
+              className="h-10 px-4 rounded-full text-xs font-bold"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="h-10 px-5 rounded-full text-xs font-bold bg-primary text-on-primary hover:opacity-95 shadow-sm transition-all"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Queue"
+              )}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}

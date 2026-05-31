@@ -1,0 +1,11 @@
+model TicketEvent {
+  id       String @id @default(cuid())
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
+
+  type String // "created", "called", "skipped", "recalled", "completed", "no_show", "hold", "resumed"
+
+  meta String @default("{}") // Storing JSON as string
+
+  createdAt DateTime @default(now())
+}
