@@ -5,6 +5,7 @@ import { fail, ok, ActionResult } from "@/server/lib/action-utils"
 import { getCounterById, getAssignedStaff } from "@/server/repositories/counter.repo"
 import * as ticketRepo from "@/server/repositories/ticket.repo"
 import { db } from "@/server/lib/db"
+import { getBusinessDayBounds } from "@/server/lib/business-day"
 import { revalidatePath } from "next/cache"
 
 async function verifyCounterStaff(counterId: string) {
@@ -41,6 +42,29 @@ async function verifyCounterStaff(counterId: string) {
   }
 
   return { success: true as const, counter, queue, userId }
+}
+
+async function getCurrentSessionTicketId(
+  queueId: string,
+  ticket: { id: string; queueSessionId: string } | null | undefined
+) {
+  if (!ticket) return null
+
+  const { start, end } = getBusinessDayBounds()
+
+  const todaySession = await db.queueSession.findFirst({
+    where: {
+      queueId,
+      status: "open",
+      date: {
+        gte: start,
+        lt: end,
+      },
+    },
+    select: { id: true },
+  })
+
+  return ticket.queueSessionId === todaySession?.id ? ticket.id : null
 }
 
 export async function callNextTicketAction(
@@ -100,17 +124,50 @@ export async function callSpecificTicketAction(
   }
 }
 
+export async function announceCurrentTicketAction(counterId: string): Promise<ActionResult<{ code: string }>> {
+  try {
+    const verification = await verifyCounterStaff(counterId)
+    if (!verification.success) return fail(verification.error)
+    const { counter, queue } = verification
+
+    const currentTicketId = await getCurrentSessionTicketId(counter.queueId, counter.currentTicket)
+
+    if (!currentTicketId || !counter.currentTicket) {
+      return fail("No ticket is currently being served at this counter")
+    }
+
+    await db.ticketEvent.create({
+      data: {
+        ticketId: currentTicketId,
+        type: "called",
+        meta: JSON.stringify({ counterId, counterName: counter.name, replay: true }),
+      },
+    })
+
+    if (queue) {
+      revalidatePath(`/org/${queue.organization.slug}/counter/${counterId}`)
+    }
+
+    return ok({ code: counter.currentTicket.code })
+  } catch (error: any) {
+    console.error("Failed to announce ticket:", error)
+    return fail(error.message || "Failed to announce ticket")
+  }
+}
+
 export async function completeCurrentTicketAction(counterId: string): Promise<ActionResult<any>> {
   try {
     const verification = await verifyCounterStaff(counterId)
     if (!verification.success) return fail(verification.error)
     const { counter, queue } = verification
 
-    if (!counter.currentTicketId) {
+    const currentTicketId = await getCurrentSessionTicketId(counter.queueId, counter.currentTicket)
+
+    if (!currentTicketId) {
       return fail("No ticket is currently being served at this counter")
     }
 
-    const updatedTicket = await ticketRepo.completeTicket(counter.currentTicketId, counterId)
+    const updatedTicket = await ticketRepo.completeTicket(currentTicketId, counterId)
 
     if (queue) {
       revalidatePath(`/org/${queue.organization.slug}/counter/${counterId}`)
@@ -129,11 +186,13 @@ export async function holdCurrentTicketAction(counterId: string): Promise<Action
     if (!verification.success) return fail(verification.error)
     const { counter, queue } = verification
 
-    if (!counter.currentTicketId) {
+    const currentTicketId = await getCurrentSessionTicketId(counter.queueId, counter.currentTicket)
+
+    if (!currentTicketId) {
       return fail("No ticket is currently being served at this counter")
     }
 
-    const updatedTicket = await ticketRepo.holdTicket(counter.currentTicketId, counterId)
+    const updatedTicket = await ticketRepo.holdTicket(currentTicketId, counterId)
 
     if (queue) {
       revalidatePath(`/org/${queue.organization.slug}/counter/${counterId}`)
@@ -174,11 +233,13 @@ export async function noShowAction(counterId: string): Promise<ActionResult<any>
     if (!verification.success) return fail(verification.error)
     const { counter, queue } = verification
 
-    if (!counter.currentTicketId) {
+    const currentTicketId = await getCurrentSessionTicketId(counter.queueId, counter.currentTicket)
+
+    if (!currentTicketId) {
       return fail("No ticket is currently being served at this counter")
     }
 
-    const updatedTicket = await ticketRepo.noShowTicket(counter.currentTicketId, counterId)
+    const updatedTicket = await ticketRepo.noShowTicket(currentTicketId, counterId)
 
     if (queue) {
       revalidatePath(`/org/${queue.organization.slug}/counter/${counterId}`)

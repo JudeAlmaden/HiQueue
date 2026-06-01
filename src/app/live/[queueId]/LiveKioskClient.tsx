@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { createTicketAction, verifyKioskPasscodeAction } from "@/server/actions/ticket.action"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -29,6 +29,14 @@ interface Props {
   queueDescription: string | null
   hasPasscode: boolean
   services: Service[]
+}
+
+interface LatestCallEvent {
+  id: string
+  ticketId: string
+  ticketCode: string
+  counterId: string | null
+  createdAt: string
 }
 
 type Screen = "AUTH" | "TICKET" | "SUCCESS"
@@ -66,6 +74,41 @@ export function LiveKioskClient({
   } | null>(null)
   const [countdown, setCountdown] = useState(12)
   const [servingTickets, setServingTickets] = useState<any[]>([])
+  const lastCallEventId = useRef<string | null | undefined>(undefined)
+
+  const playCallSound = () => {
+    type AudioWindow = Window & {
+      webkitAudioContext?: typeof AudioContext
+    }
+
+    try {
+      const AudioContextConstructor = window.AudioContext || (window as AudioWindow).webkitAudioContext
+      if (!AudioContextConstructor) return
+
+      const audioContext = new AudioContextConstructor()
+      const playTone = (frequency: number, startTime: number, duration: number) => {
+        const oscillator = audioContext.createOscillator()
+        const gain = audioContext.createGain()
+
+        oscillator.type = "sine"
+        oscillator.frequency.setValueAtTime(frequency, startTime)
+        gain.gain.setValueAtTime(0.001, startTime)
+        gain.gain.exponentialRampToValueAtTime(0.2, startTime + 0.03)
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration)
+
+        oscillator.connect(gain)
+        gain.connect(audioContext.destination)
+        oscillator.start(startTime)
+        oscillator.stop(startTime + duration)
+      }
+
+      const now = audioContext.currentTime
+      playTone(660, now, 0.22)
+      playTone(880, now + 0.25, 0.28)
+    } catch (error) {
+      console.error("Kiosk failed to play call sound:", error)
+    }
+  }
 
   // SSE connection for Now Serving updates
   useEffect(() => {
@@ -84,6 +127,15 @@ export function LiveKioskClient({
           if (payload.tickets) {
             const serving = payload.tickets.filter((t: any) => t.status === "serving")
             setServingTickets(serving)
+          }
+          const latestCallEvent = payload.latestCallEvent as LatestCallEvent | null | undefined
+          if (latestCallEvent !== undefined) {
+            if (lastCallEventId.current === undefined) {
+              lastCallEventId.current = latestCallEvent?.id ?? null
+            } else if (latestCallEvent?.id && latestCallEvent.id !== lastCallEventId.current) {
+              lastCallEventId.current = latestCallEvent.id
+              playCallSound()
+            }
           }
         } catch (err) {
           console.error("Kiosk failed to parse SSE payload:", err)

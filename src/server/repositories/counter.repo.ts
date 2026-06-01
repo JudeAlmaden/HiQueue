@@ -1,4 +1,5 @@
 import { db } from "@/server/lib/db"
+import { getBusinessDayBounds } from "@/server/lib/business-day"
 
 /**
  * Counter repository — handles Counter operations.
@@ -65,13 +66,41 @@ export async function deleteCounter(id: string) {
  * @returns Promise resolving to array of counters
  */
 export async function getQueueCounters(queueId: string) {
-  return db.counter.findMany({
+  const { start, end } = getBusinessDayBounds()
+
+  const todaySession = await db.queueSession.findFirst({
+    where: {
+      queueId,
+      status: "open",
+      date: {
+        gte: start,
+        lt: end,
+      },
+    },
+    select: { id: true },
+  })
+
+  const counters = await db.counter.findMany({
     where: { queueId },
     include: {
       services: true,
+      currentTicket: {
+        select: {
+          queueSessionId: true,
+          status: true,
+        },
+      },
     },
     orderBy: { name: "asc" },
   })
+
+  return counters.map(({ currentTicket, ...counter }) => ({
+    ...counter,
+    currentTicketId:
+      currentTicket?.queueSessionId === todaySession?.id && currentTicket.status === "serving"
+        ? counter.currentTicketId
+        : null,
+  }))
 }
 
 /**

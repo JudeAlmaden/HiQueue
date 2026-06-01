@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Monitor, Clock, Users, TrendingUp, Lock, Loader2 } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { Monitor, Clock, Users, Lock, Loader2 } from "lucide-react"
 import { verifyKioskPasscodeAction } from "@/server/actions/ticket.action"
 
 interface Service {
@@ -40,6 +40,14 @@ interface Ticket {
   service: Service
 }
 
+interface LatestCallEvent {
+  id: string
+  ticketId: string
+  ticketCode: string
+  counterId: string | null
+  createdAt: string
+}
+
 interface Props {
   queue: Queue
   initialTickets: Ticket[]
@@ -48,7 +56,7 @@ interface Props {
   hasPasscode: boolean
 }
 
-export function LiveDisplayClient({ queue, initialTickets, initialCounters, orgSlug, hasPasscode }: Props) {
+export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasPasscode }: Props) {
   const [tickets, setTickets] = useState<Ticket[]>(initialTickets)
   const [counters, setCounters] = useState<Counter[]>(initialCounters)
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -57,16 +65,55 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, orgS
   const [enteredPasscode, setEnteredPasscode] = useState("")
   const [isAuthLoading, setIsAuthLoading] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
+  const lastCallEventId = useRef<string | null | undefined>(undefined)
+
+  const playCallSound = () => {
+    type AudioWindow = Window & {
+      webkitAudioContext?: typeof AudioContext
+    }
+
+    try {
+      const AudioContextConstructor = window.AudioContext || (window as AudioWindow).webkitAudioContext
+      if (!AudioContextConstructor) return
+
+      const audioContext = new AudioContextConstructor()
+      const playTone = (frequency: number, startTime: number, duration: number) => {
+        const oscillator = audioContext.createOscillator()
+        const gain = audioContext.createGain()
+
+        oscillator.type = "sine"
+        oscillator.frequency.setValueAtTime(frequency, startTime)
+        gain.gain.setValueAtTime(0.001, startTime)
+        gain.gain.exponentialRampToValueAtTime(0.22, startTime + 0.03)
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration)
+
+        oscillator.connect(gain)
+        gain.connect(audioContext.destination)
+        oscillator.start(startTime)
+        oscillator.stop(startTime + duration)
+      }
+
+      const now = audioContext.currentTime
+      playTone(660, now, 0.22)
+      playTone(880, now + 0.25, 0.28)
+    } catch (error) {
+      console.error("Failed to play call sound:", error)
+    }
+  }
 
   // Check persisted auth on mount
   useEffect(() => {
-    setIsHydrated(true)
-    if (hasPasscode) {
-      const persisted = localStorage.getItem(`display_unlocked_${queue.id}`)
-      if (persisted === "true") {
-        setIsAuthenticated(true)
+    const timer = window.setTimeout(() => {
+      setIsHydrated(true)
+      if (hasPasscode) {
+        const persisted = localStorage.getItem(`display_unlocked_${queue.id}`)
+        if (persisted === "true") {
+          setIsAuthenticated(true)
+        }
       }
-    }
+    }, 0)
+
+    return () => window.clearTimeout(timer)
   }, [hasPasscode, queue.id])
 
   // SSE Real-time syncing
@@ -90,6 +137,15 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, orgS
           }
           if (payload.counters) {
             setCounters(payload.counters)
+          }
+          const latestCallEvent = payload.latestCallEvent as LatestCallEvent | null | undefined
+          if (latestCallEvent !== undefined) {
+            if (lastCallEventId.current === undefined) {
+              lastCallEventId.current = latestCallEvent?.id ?? null
+            } else if (latestCallEvent?.id && latestCallEvent.id !== lastCallEventId.current) {
+              lastCallEventId.current = latestCallEvent.id
+              playCallSound()
+            }
           }
         } catch (err) {
           console.error("Failed to parse SSE payload:", err)
@@ -142,19 +198,10 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, orgS
         setAuthError(res.error || "Invalid passcode. Please try again.")
         setEnteredPasscode("")
       }
-    } catch (err) {
+    } catch {
       setAuthError("An error occurred. Please try again.")
     } finally {
       setIsAuthLoading(false)
-    }
-  }
-
-  const getCustomerName = (ticket: Ticket) => {
-    try {
-      const customerObj = JSON.parse(ticket.customer || "{}")
-      return customerObj.name || "Customer"
-    } catch {
-      return "Customer"
     }
   }
 
@@ -185,7 +232,6 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, orgS
 
   const primaryColor = branding.primaryColor || "#4a654e"
   const logoUrl = branding.logoUrl
-  const welcomeMessage = branding.welcomeMessage || `Welcome to ${queue.organization?.name || "our facility"}`
 
   // Show auth screen if not authenticated
   if (!isHydrated || (hasPasscode && !isAuthenticated)) {
@@ -270,11 +316,6 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, orgS
       </header>
 
       <main className="flex-1 overflow-hidden flex flex-col px-8 py-8">
-        {/* Welcome Message */}
-        <div className="mb-8 text-center flex-shrink-0">
-          <h2 className="text-[20px] font-semibold text-[#1a1c1a]">{welcomeMessage}</h2>
-        </div>
-
         <div className="flex-1 grid grid-cols-12 gap-8 min-h-0">
           {/* Left Column: Now Serving */}
           <div className="col-span-8 flex flex-col min-h-0">
@@ -343,37 +384,37 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, orgS
           </div>
 
           {/* Right Column: Waiting Queue */}
-          <div className="col-span-4 flex flex-col min-h-0">
-            <div className="flex items-center gap-3 mb-6 flex-shrink-0">
-              <div className="h-12 w-12 rounded-[1rem] bg-[#dde7c7] flex items-center justify-center">
-                <Users className="h-6 w-6 text-[#586249]" />
+          <div className="col-span-4 flex min-h-0 flex-col">
+            <div className="mb-4 flex flex-shrink-0 items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-[0.85rem] bg-[#dde7c7]">
+                <Users className="h-5 w-5 text-[#586249]" />
               </div>
               <div>
-                <h2 className="text-[20px] font-bold text-[#1a1c1a] leading-tight">Waiting Queue</h2>
+                <h2 className="text-[18px] font-bold text-[#1a1c1a] leading-tight">Waiting Queue</h2>
                 <p className="text-xs text-[#737972] font-semibold">{waitingTickets.length} in line</p>
               </div>
             </div>
 
-            <div className="flex-1 bg-white rounded-[1.5rem] p-6 overflow-y-auto min-h-0 shadow-[0_10px_40px_rgba(44,74,62,0.08)] border border-[#e3e2e0]">
+            <div className="max-h-[calc(100vh-18rem)] min-h-0 overflow-hidden rounded-[1.25rem] border border-[#e3e2e0] bg-white p-4 shadow-[0_10px_40px_rgba(44,74,62,0.08)]">
               {waitingTickets.length > 0 ? (
-                <div className="space-y-3">
+                <div className="h-full max-h-[calc(100vh-20rem)] space-y-2 overflow-y-auto pr-2">
                   {waitingTickets.map((ticket, index) => (
                     <div
                       key={ticket.id}
-                      className="bg-[#f4f3f1] rounded-[1rem] p-4 hover:bg-[#efeeeb] transition-all"
+                      className="rounded-[0.9rem] bg-[#f4f3f1] px-4 py-3 transition-all hover:bg-[#efeeeb]"
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <div className="h-7 w-7 rounded-[0.5rem] bg-[#cceace] flex items-center justify-center text-xs font-black text-[#4a654e]">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[0.5rem] bg-[#cceace] text-xs font-black text-[#4a654e]">
                             {index + 1}
-                          </div>
-                          <div className="text-[24px] font-black font-mono leading-none" style={{ color: primaryColor }}>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate font-mono text-[22px] font-black leading-none" style={{ color: primaryColor }}>
                             {ticket.code}
                           </div>
+                          <div className="mt-1 truncate text-xs font-semibold text-[#737972]">
+                            {ticket.service.name}
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-xs text-[#737972] font-semibold ml-10">
-                        {ticket.service.name}
                       </div>
                     </div>
                   ))}
@@ -386,25 +427,6 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, orgS
                   <p className="text-[#737972] font-semibold text-sm">No tickets waiting</p>
                 </div>
               )}
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-4 mt-6 flex-shrink-0">
-              <div className="bg-white rounded-[1rem] p-4 shadow-[0_4px_12px_rgba(44,74,62,0.06)] border border-[#e3e2e0]">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="h-4 w-4 text-[#4a654e]" />
-                  <span className="text-xs font-bold text-[#737972] uppercase tracking-wider">Serving</span>
-                </div>
-                <div className="text-[28px] font-black text-[#1a1c1a] leading-none">{servingTickets.length}</div>
-              </div>
-              
-              <div className="bg-white rounded-[1rem] p-4 shadow-[0_4px_12px_rgba(44,74,62,0.06)] border border-[#e3e2e0]">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="h-4 w-4 text-[#586249]" />
-                  <span className="text-xs font-bold text-[#737972] uppercase tracking-wider">Waiting</span>
-                </div>
-                <div className="text-[28px] font-black text-[#1a1c1a] leading-none">{waitingTickets.length}</div>
-              </div>
             </div>
           </div>
         </div>

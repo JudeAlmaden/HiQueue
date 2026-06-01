@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import { getQueueTickets } from "@/server/repositories/ticket.repo"
 import { getQueueCounters } from "@/server/repositories/counter.repo"
+import { db } from "@/server/lib/db"
 
 export const dynamic = "force-dynamic"
 
@@ -20,11 +21,40 @@ export async function GET(
         try {
           const tickets = await getQueueTickets(queueId)
           const counters = await getQueueCounters(queueId)
+          const latestCallEvent = await db.ticketEvent.findFirst({
+            where: {
+              type: "called",
+              ticket: {
+                queueId,
+              },
+            },
+            select: {
+              id: true,
+              createdAt: true,
+              ticket: {
+                select: {
+                  id: true,
+                  code: true,
+                  counterId: true,
+                },
+              },
+            },
+            orderBy: { createdAt: "desc" },
+          })
 
           // Format clean JSON data for frontend consumption
           const payload = {
             tickets,
             counters,
+            latestCallEvent: latestCallEvent
+              ? {
+                  id: latestCallEvent.id,
+                  ticketId: latestCallEvent.ticket.id,
+                  ticketCode: latestCallEvent.ticket.code,
+                  counterId: latestCallEvent.ticket.counterId,
+                  createdAt: latestCallEvent.createdAt,
+                }
+              : null,
           }
           const currentData = JSON.stringify(payload)
 
@@ -51,7 +81,7 @@ export async function GET(
         clearInterval(interval)
         try {
           controller.close()
-        } catch (e) {
+        } catch {
           // controller might already be closed
         }
       })

@@ -36,10 +36,17 @@ export default async function CounterConsolePage({ params }: Props) {
 
   // Load initial tickets for the queue session
   const tickets = await getQueueTickets(counter.queueId)
+  const sessionTicketIds = new Set(tickets.map((ticket) => ticket.id))
+  const sessionCounter = {
+    ...counter,
+    currentTicketId: counter.currentTicketId && sessionTicketIds.has(counter.currentTicketId)
+      ? counter.currentTicketId
+      : null,
+  }
 
   return (
     <CounterConsoleClient
-      counter={JSON.parse(JSON.stringify(counter))}
+      counter={JSON.parse(JSON.stringify(sessionCounter))}
       initialTickets={JSON.parse(JSON.stringify(tickets))}
       orgSlug={slug}
       orgName={org.name}

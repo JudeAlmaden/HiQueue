@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import { useToast } from "@/components/ui/toast"
@@ -14,11 +14,13 @@ import {
   ChevronRight,
   Wifi,
   WifiOff,
-  Search
+  Search,
+  Volume2
 } from "lucide-react"
 import {
   callNextTicketAction,
   callSpecificTicketAction,
+  announceCurrentTicketAction,
   completeCurrentTicketAction,
   holdCurrentTicketAction,
   recallFromHoldAction,
@@ -226,6 +228,22 @@ export default function CounterConsoleClient({
     }
   }
 
+  const handleAnnounceCurrent = async () => {
+    setActionLoading(true)
+    try {
+      const res = await announceCurrentTicketAction(counter.id)
+      if (res.success) {
+        toasts.success("Called ticket on live display: " + res.data.code)
+      } else {
+        toasts.error(res.error || "Failed to call ticket")
+      }
+    } catch (err) {
+      toasts.error("An unexpected error occurred")
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   const handleComplete = async () => {
     setActionLoading(true)
     try {
@@ -332,10 +350,10 @@ export default function CounterConsoleClient({
   )
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-4 max-w-7xl mx-auto">
       {/* Top Console Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
-        <div className="space-y-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
           <div className="flex items-center gap-2 text-xs font-semibold text-on-surface-variant">
             <Link href={`/org/${orgSlug}/counter`} className="hover:text-primary transition-colors">
               Counters
@@ -343,13 +361,13 @@ export default function CounterConsoleClient({
             <ChevronRight className="h-3 w-3" />
             <span>Console</span>
           </div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-black text-on-surface flex items-center gap-2">
-              <Monitor className="h-5 w-5 text-primary opacity-80" />
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-black text-on-surface flex items-center gap-2">
+              <Monitor className="h-4 w-4 text-primary opacity-80" />
               {counter.name}
             </h1>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
-              Serving: {counter.services.map((s) => s.name).join(", ")}
+            <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+              {counter.services.map((s) => s.name).join(", ")}
             </span>
           </div>
         </div>
@@ -370,22 +388,22 @@ export default function CounterConsoleClient({
             )}
           </span>
           <span className="text-xs font-medium text-on-surface-variant/80">
-            {sseConnected === "connected" ? "Live Connected" : "Reconnecting..."}
+            {sseConnected === "connected" ? "Live" : "Reconnecting"}
           </span>
         </div>
       </div>
 
       {/* Service Filter Bar — always shown when counter has services */}
       {counter.services.length > 0 && (
-        <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-xs font-bold text-on-surface-variant/70 uppercase tracking-wider shrink-0">
-              {counter.services.length === 1 ? "Serving:" : "Filter by Service:"}
+        <div className="rounded-xl border border-border/70 bg-card/80 px-3 py-2 shadow-sm">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-wider shrink-0">
+              {counter.services.length === 1 ? "Serving" : "Filter"}
             </span>
             {counter.services.length > 1 && (
               <button
                 onClick={() => setSelectedServiceId(null)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border ${
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer border ${
                   selectedServiceId === null
                     ? "bg-primary text-on-primary border-primary shadow-sm"
                     : "bg-transparent text-on-surface-variant border-border hover:border-primary/50 hover:text-primary"
@@ -407,7 +425,7 @@ export default function CounterConsoleClient({
                 <button
                   key={s.id}
                   onClick={() => counter.services.length > 1 ? setSelectedServiceId(selectedServiceId === s.id ? null : s.id) : null}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all border ${
                     isOnlyService
                       ? "bg-primary text-on-primary border-primary shadow-sm cursor-default"
                       : isSelected
@@ -429,10 +447,10 @@ export default function CounterConsoleClient({
       )}
 
       {/* Main Console Grid */}
-      <div className="grid gap-6 md:grid-cols-12">
+      <div className="grid items-stretch gap-6 md:grid-cols-12">
         {/* Left Column: Active Call Card */}
         <div className="md:col-span-5 flex flex-col">
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-md flex-1 flex flex-col justify-between min-h-[350px]">
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-md flex-1 flex flex-col justify-between md:sticky md:top-6">
             {currentTicket ? (
               <div className="space-y-6 flex-1 flex flex-col justify-between">
                 {/* Header */}
@@ -467,6 +485,14 @@ export default function CounterConsoleClient({
 
                 {/* Serving Controls */}
                 <div className="grid grid-cols-2 gap-3 mt-auto">
+                  <Button
+                    onClick={handleAnnounceCurrent}
+                    disabled={actionLoading}
+                    className="col-span-2 h-11 rounded-full font-bold text-xs bg-tertiary text-on-tertiary hover:opacity-95 flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                  >
+                    <Volume2 className="h-4 w-4" />
+                    Call Ticket
+                  </Button>
                   <Button
                     onClick={handleComplete}
                     disabled={actionLoading}
@@ -555,10 +581,10 @@ export default function CounterConsoleClient({
         </div>
 
         {/* Right Column: Tabbed Lists */}
-        <div className="md:col-span-7">
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-md min-h-[450px] flex flex-col">
+        <div className="md:col-span-7 flex flex-col">
+          <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-md">
             {/* Search Bar */}
-            <div className="mb-4">
+            <div className="mb-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-on-surface-variant/50" />
                 <input
@@ -566,7 +592,7 @@ export default function CounterConsoleClient({
                   placeholder="Search by ticket code, customer name, or service..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-10 pl-10 pr-4 rounded-xl border border-border bg-surface-low text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  className="w-full h-9 pl-10 pr-4 rounded-xl border border-border bg-surface-low text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                 />
                 {searchQuery && (
                   <button
@@ -580,10 +606,10 @@ export default function CounterConsoleClient({
             </div>
 
             {/* Tabs Selector */}
-            <div className="flex border-b border-border/50 pb-2 mb-4 gap-1">
+            <div className="flex border-b border-border/50 pb-2 mb-3 gap-1">
               <button
                 onClick={() => setActiveTab("upcoming")}
-                className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
                   activeTab === "upcoming"
                     ? "bg-primary/10 text-primary"
                     : "text-on-surface-variant/60 hover:text-on-surface"
@@ -593,7 +619,7 @@ export default function CounterConsoleClient({
               </button>
               <button
                 onClick={() => setActiveTab("hold")}
-                className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
                   activeTab === "hold"
                     ? "bg-primary/10 text-primary"
                     : "text-on-surface-variant/60 hover:text-on-surface"
@@ -603,7 +629,7 @@ export default function CounterConsoleClient({
               </button>
               <button
                 onClick={() => setActiveTab("completed")}
-                className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
                   activeTab === "completed"
                     ? "bg-primary/10 text-primary"
                     : "text-on-surface-variant/60 hover:text-on-surface"
@@ -614,19 +640,19 @@ export default function CounterConsoleClient({
             </div>
 
             {/* Tab Contents */}
-            <div className="flex-1 flex flex-col">
+            <div className="min-h-0 flex-1 overflow-hidden">
               {activeTab === "upcoming" && (
-                <div className="flex-1 flex flex-col">
+                <div className="flex h-full min-h-0 flex-col">
                   {upcomingTickets.length > 0 ? (
-                    <div className="overflow-x-auto">
+                    <div className="min-h-0 flex-1 overflow-auto pr-1">
                       <table className="w-full text-left border-collapse text-xs">
-                        <thead>
+                        <thead className="sticky top-0 z-10 bg-card">
                           <tr className="border-b border-border/50 text-on-surface-variant/60 font-bold uppercase tracking-wider">
-                            <th className="py-2.5 font-bold">Code</th>
-                            <th className="py-2.5 font-bold">Customer</th>
-                            <th className="py-2.5 font-bold">Service</th>
-                            <th className="py-2.5 font-bold">Wait Time</th>
-                            <th className="py-2.5 text-right font-bold">Action</th>
+                            <th className="py-2 font-bold">Code</th>
+                            <th className="py-2 font-bold">Customer</th>
+                            <th className="py-2 font-bold">Service</th>
+                            <th className="py-2 font-bold">Wait Time</th>
+                            <th className="py-2 text-right font-bold">Action</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border/30">
@@ -639,17 +665,17 @@ export default function CounterConsoleClient({
                             )
                             return (
                               <tr key={t.id} className="hover:bg-surface-low/30 transition-colors">
-                                <td className="py-3 font-mono font-extrabold text-primary text-sm">{t.code}</td>
-                                <td className="py-3 font-semibold text-on-surface">{getCustomerName(t)}</td>
-                                <td className="py-3 text-on-surface-variant">{t.service.name}</td>
-                                <td className="py-3 text-on-surface-variant font-medium">
+                                <td className="py-2 font-mono font-extrabold text-primary text-sm">{t.code}</td>
+                                <td className="py-2 font-semibold text-on-surface">{getCustomerName(t)}</td>
+                                <td className="py-2 text-on-surface-variant">{t.service.name}</td>
+                                <td className="py-2 text-on-surface-variant font-medium">
                                   {waitMins}m waiting
                                 </td>
-                                <td className="py-3 text-right">
+                                <td className="py-2 text-right">
                                   <Button
                                     onClick={() => handleCallSpecific(t.id)}
                                     disabled={actionLoading || !!currentTicketId}
-                                    className="h-8 px-4 rounded-full font-bold text-[10px] bg-primary text-on-primary hover:opacity-90 cursor-pointer disabled:opacity-40"
+                                    className="h-7 px-3 rounded-full font-bold text-[10px] bg-primary text-on-primary hover:opacity-90 cursor-pointer disabled:opacity-40"
                                   >
                                     Call
                                   </Button>
@@ -671,37 +697,37 @@ export default function CounterConsoleClient({
               )}
 
               {activeTab === "hold" && (
-                <div className="flex-1 flex flex-col">
+                <div className="flex h-full min-h-0 flex-col">
                   {holdTickets.length > 0 ? (
-                    <div className="overflow-x-auto">
+                    <div className="min-h-0 flex-1 overflow-auto pr-1">
                       <table className="w-full text-left border-collapse text-xs">
-                        <thead>
+                        <thead className="sticky top-0 z-10 bg-card">
                           <tr className="border-b border-border/50 text-on-surface-variant/60 font-bold uppercase tracking-wider">
-                            <th className="py-2.5 font-bold">Code</th>
-                            <th className="py-2.5 font-bold">Customer</th>
-                            <th className="py-2.5 font-bold">Service</th>
-                            <th className="py-2.5 text-right font-bold">Action</th>
+                            <th className="py-2 font-bold">Code</th>
+                            <th className="py-2 font-bold">Customer</th>
+                            <th className="py-2 font-bold">Service</th>
+                            <th className="py-2 text-right font-bold">Action</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border/30">
                           {holdTickets.map((t) => (
                             <tr key={t.id} className="hover:bg-surface-low/30 transition-colors">
-                              <td className="py-3 font-mono font-extrabold text-primary text-sm">{t.code}</td>
-                              <td className="py-3 font-semibold text-on-surface">{getCustomerName(t)}</td>
-                              <td className="py-3 text-on-surface-variant">{t.service.name}</td>
-                              <td className="py-3 text-right">
+                              <td className="py-2 font-mono font-extrabold text-primary text-sm">{t.code}</td>
+                              <td className="py-2 font-semibold text-on-surface">{getCustomerName(t)}</td>
+                              <td className="py-2 text-on-surface-variant">{t.service.name}</td>
+                              <td className="py-2 text-right">
                                 <div className="flex gap-2 justify-end">
                                   <Button
                                     onClick={() => handleCallSpecific(t.id)}
                                     disabled={actionLoading || !!currentTicketId}
-                                    className="h-8 px-3 rounded-full font-bold text-[10px] bg-secondary-container text-on-secondary-container hover:opacity-90 cursor-pointer disabled:opacity-40"
+                                    className="h-7 px-3 rounded-full font-bold text-[10px] bg-secondary-container text-on-secondary-container hover:opacity-90 cursor-pointer disabled:opacity-40"
                                   >
                                     Call
                                   </Button>
                                   <Button
                                     onClick={() => handleResumeFromHold(t.id)}
                                     disabled={actionLoading || !!currentTicketId}
-                                    className="h-8 px-3 rounded-full font-bold text-[10px] bg-primary text-on-primary hover:opacity-90 cursor-pointer disabled:opacity-40"
+                                    className="h-7 px-3 rounded-full font-bold text-[10px] bg-primary text-on-primary hover:opacity-90 cursor-pointer disabled:opacity-40"
                                   >
                                     Resume
                                   </Button>
@@ -723,31 +749,31 @@ export default function CounterConsoleClient({
               )}
 
               {activeTab === "completed" && (
-                <div className="flex-1 flex flex-col">
+                <div className="flex h-full min-h-0 flex-col">
                   {completedTickets.length > 0 ? (
-                    <div className="overflow-x-auto">
+                    <div className="min-h-0 flex-1 overflow-auto pr-1">
                       <table className="w-full text-left border-collapse text-xs">
-                        <thead>
+                        <thead className="sticky top-0 z-10 bg-card">
                           <tr className="border-b border-border/50 text-on-surface-variant/60 font-bold uppercase tracking-wider">
-                            <th className="py-2.5 font-bold">Code</th>
-                            <th className="py-2.5 font-bold">Customer</th>
-                            <th className="py-2.5 font-bold">Service</th>
-                            <th className="py-2.5 font-bold">Finished</th>
-                            <th className="py-2.5 text-right font-bold">Status</th>
+                            <th className="py-2 font-bold">Code</th>
+                            <th className="py-2 font-bold">Customer</th>
+                            <th className="py-2 font-bold">Service</th>
+                            <th className="py-2 font-bold">Finished</th>
+                            <th className="py-2 text-right font-bold">Status</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border/30">
                           {completedTickets.slice().reverse().map((t) => (
                             <tr key={t.id} className="hover:bg-surface-low/30 transition-colors">
-                              <td className="py-3 font-mono font-extrabold text-on-surface-variant/65 text-sm">{t.code}</td>
-                              <td className="py-3 font-semibold text-on-surface/85">{getCustomerName(t)}</td>
-                              <td className="py-3 text-on-surface-variant/75">{t.service.name}</td>
-                              <td className="py-3 text-on-surface-variant/70">
+                              <td className="py-2 font-mono font-extrabold text-on-surface-variant/65 text-sm">{t.code}</td>
+                              <td className="py-2 font-semibold text-on-surface/85">{getCustomerName(t)}</td>
+                              <td className="py-2 text-on-surface-variant/75">{t.service.name}</td>
+                              <td className="py-2 text-on-surface-variant/70">
                                 {t.completedAt
                                   ? new Date(t.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                  : "—"}
+                                  : "-"}
                               </td>
-                              <td className="py-3 text-right">
+                              <td className="py-2 text-right">
                                 <span
                                   className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                     t.status === "done"

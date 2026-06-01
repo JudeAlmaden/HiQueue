@@ -1,4 +1,5 @@
 import { db } from "@/server/lib/db"
+import { getBusinessDayBounds } from "@/server/lib/business-day"
 
 /**
  * Get or create an open queue session for today.
@@ -6,9 +7,7 @@ import { db } from "@/server/lib/db"
  * @returns Promise resolving to the QueueSession
  */
 export async function getOrCreateTodaySession(queueId: string) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
+  const { start, end } = getBusinessDayBounds()
 
   // Find open session for today
   let session = await db.queueSession.findFirst({
@@ -16,8 +15,8 @@ export async function getOrCreateTodaySession(queueId: string) {
       queueId,
       status: "open",
       date: {
-        gte: today,
-        lt: tomorrow,
+        gte: start,
+        lt: end,
       },
     },
   })
@@ -26,7 +25,7 @@ export async function getOrCreateTodaySession(queueId: string) {
     session = await db.queueSession.create({
       data: {
         queueId,
-        date: new Date(),
+        date: start,
         status: "open",
         currentNumber: 0,
       },
@@ -60,17 +59,15 @@ export async function createTicket(data: {
     if (!service) throw new Error("Service not found")
 
     // 3. Find open session for today (within transaction)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000)
+    const { start, end } = getBusinessDayBounds()
 
     let session = await tx.queueSession.findFirst({
       where: {
         queueId: data.queueId,
         status: "open",
         date: {
-          gte: today,
-          lt: tomorrow,
+          gte: start,
+          lt: end,
         },
       },
     })
@@ -79,7 +76,7 @@ export async function createTicket(data: {
       session = await tx.queueSession.create({
         data: {
           queueId: data.queueId,
-          date: new Date(),
+          date: start,
           status: "open",
           currentNumber: 0,
         },
@@ -129,6 +126,7 @@ export async function getWaitingTicketsCount(queueId: string, ticketId: string) 
   return db.ticket.count({
     where: {
       queueId,
+      queueSessionId: currentTicket.queueSessionId,
       status: "waiting",
       createdAt: {
         lt: currentTicket.createdAt,
@@ -194,11 +192,17 @@ export async function callTicket(ticketId: string, counterId: string) {
   return db.$transaction(async (tx) => {
     const counter = await tx.counter.findUnique({
       where: { id: counterId },
+      include: {
+        currentTicket: {
+          select: {
+            id: true,
+            queueSessionId: true,
+            status: true,
+          },
+        },
+      },
     })
     if (!counter) throw new Error("Counter not found")
-    if (counter.currentTicketId) {
-      throw new Error("Counter is currently serving another ticket")
-    }
 
     const ticket = await tx.ticket.findUnique({
       where: { id: ticketId },
@@ -206,6 +210,38 @@ export async function callTicket(ticketId: string, counterId: string) {
     if (!ticket) throw new Error("Ticket not found")
     if (ticket.status !== "waiting" && ticket.status !== "hold") {
       throw new Error("Ticket is not in waiting or hold status")
+    }
+
+    const { start, end } = getBusinessDayBounds()
+    const todaySession = await tx.queueSession.findFirst({
+      where: {
+        queueId: ticket.queueId,
+        status: "open",
+        date: {
+          gte: start,
+          lt: end,
+        },
+      },
+      select: { id: true },
+    })
+
+    if (ticket.queueSessionId !== todaySession?.id) {
+      throw new Error("Ticket is not part of the current queue session")
+    }
+
+    if (counter.currentTicketId) {
+      const isServingCurrentSessionTicket =
+        counter.currentTicket?.status === "serving" &&
+        counter.currentTicket.queueSessionId === ticket.queueSessionId
+
+      if (isServingCurrentSessionTicket) {
+        throw new Error("Counter is currently serving another ticket")
+      }
+
+      await tx.counter.update({
+        where: { id: counterId },
+        data: { currentTicketId: null },
+      })
     }
 
     // Update ticket
@@ -346,11 +382,17 @@ export async function recallFromHold(ticketId: string, counterId: string) {
   return db.$transaction(async (tx) => {
     const counter = await tx.counter.findUnique({
       where: { id: counterId },
+      include: {
+        currentTicket: {
+          select: {
+            id: true,
+            queueSessionId: true,
+            status: true,
+          },
+        },
+      },
     })
     if (!counter) throw new Error("Counter not found")
-    if (counter.currentTicketId) {
-      throw new Error("Counter is currently serving another ticket")
-    }
 
     const ticket = await tx.ticket.findUnique({
       where: { id: ticketId },
@@ -358,6 +400,38 @@ export async function recallFromHold(ticketId: string, counterId: string) {
     if (!ticket) throw new Error("Ticket not found")
     if (ticket.status !== "hold") {
       throw new Error("Ticket is not on hold")
+    }
+
+    const { start, end } = getBusinessDayBounds()
+    const todaySession = await tx.queueSession.findFirst({
+      where: {
+        queueId: ticket.queueId,
+        status: "open",
+        date: {
+          gte: start,
+          lt: end,
+        },
+      },
+      select: { id: true },
+    })
+
+    if (ticket.queueSessionId !== todaySession?.id) {
+      throw new Error("Ticket is not part of the current queue session")
+    }
+
+    if (counter.currentTicketId) {
+      const isServingCurrentSessionTicket =
+        counter.currentTicket?.status === "serving" &&
+        counter.currentTicket.queueSessionId === ticket.queueSessionId
+
+      if (isServingCurrentSessionTicket) {
+        throw new Error("Counter is currently serving another ticket")
+      }
+
+      await tx.counter.update({
+        where: { id: counterId },
+        data: { currentTicketId: null },
+      })
     }
 
     // Update ticket
