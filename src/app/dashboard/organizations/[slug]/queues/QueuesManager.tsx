@@ -36,12 +36,12 @@ export function QueuesManager({ queues, currentUserRole, organizationId, orgSlug
   const isAllowedToManage = currentUserRole === "owner" || currentUserRole === "admin"
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Action Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-on-surface">Queues</h2>
-          <p className="text-xs text-on-surface-variant">
+          <h2 className="text-2xl font-bold text-on-surface">Queues</h2>
+          <p className="text-sm text-on-surface-variant mt-1">
             Create, manage, and configure wait queues for different services.
           </p>
         </div>
@@ -49,7 +49,7 @@ export function QueuesManager({ queues, currentUserRole, organizationId, orgSlug
         {isAllowedToManage && (
           <Button
             onClick={() => setIsAddOpen(true)}
-            className="flex items-center gap-1.5 h-10 px-5 rounded-full font-bold text-xs bg-primary text-on-primary hover:opacity-90 shadow-sm transition-all"
+            className="flex items-center gap-2 h-10 px-5 rounded-full font-semibold text-sm bg-primary text-on-primary hover:opacity-90 transition-all"
           >
             <Plus className="h-4 w-4" />
             Create Queue
@@ -63,33 +63,28 @@ export function QueuesManager({ queues, currentUserRole, organizationId, orgSlug
           {queues.map((q) => (
             <div
               key={q.id}
-              className="group rounded-2xl bg-gradient-to-br from-card to-surface-low border border-border p-6 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col justify-between min-h-[280px]"
+              className="group rounded-2xl bg-card border border-border p-6 hover:border-primary/20 hover:shadow-md transition-all duration-200 flex flex-col gap-6"
             >
               {/* Header Section */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                        <ListOrdered className="h-5 w-5 text-primary" />
-                      </div>
-                      <h3 className="text-lg font-black text-on-surface truncate">
-                        {q.name}
-                      </h3>
-                    </div>
+                    <h3 className="text-lg font-bold text-on-surface mb-1.5">
+                      {q.name}
+                    </h3>
                     <p className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
                       {q.description || "No description provided."}
                     </p>
                   </div>
 
-                  {/* Settings dropdown / actions */}
+                  {/* Actions */}
                   {isAllowedToManage && (
-                    <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 shrink-0">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setEditingQueue(q)}
-                        className="h-8 w-8 text-on-surface-variant hover:text-primary rounded-full hover:bg-surface-low"
+                        className="h-8 w-8 text-on-surface-variant hover:text-on-surface rounded-full hover:bg-surface-container"
                       >
                         <Edit2 className="h-3.5 w-3.5" />
                       </Button>
@@ -106,45 +101,45 @@ export function QueuesManager({ queues, currentUserRole, organizationId, orgSlug
                 </div>
 
                 {/* Status Badge */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 text-xs text-on-surface-variant">
                   {q.passcode ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
-                      <Key className="h-3 w-3" />
-                      Passcode Protected
-                    </span>
+                    <>
+                      <Key className="h-3.5 w-3.5 shrink-0" />
+                      <span>Passcode Protected</span>
+                    </>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-surface-container text-on-surface-variant border border-border">
-                      <Users className="h-3 w-3" />
-                      Public Entry
-                    </span>
+                    <>
+                      <Users className="h-3.5 w-3.5 shrink-0" />
+                      <span>Public Entry</span>
+                    </>
                   )}
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-2 pt-4 border-t border-border/50">
+              <div className="space-y-2 pt-3 border-t border-border/60">
                 <Link
                   href={`/org/${orgSlug}/display/${q.id}`}
                   target="_blank"
-                  className="w-full h-11 rounded-xl font-bold text-sm bg-primary text-on-primary hover:bg-primary/95 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group/btn"
+                  className="w-full h-10 rounded-full font-semibold text-sm bg-primary text-on-primary hover:opacity-90 transition-all flex items-center justify-center gap-2"
                 >
-                  <Monitor className="h-4 w-4 group-hover/btn:scale-110 transition-transform" />
+                  <Monitor className="h-4 w-4" />
                   Live View Screen
-                  <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+                  <ExternalLink className="h-3.5 w-3.5" />
                 </Link>
                 
                 <div className="grid grid-cols-2 gap-2">
                   <Link
                     href={`/live/${q.id}`}
                     target="_blank"
-                    className="h-9 rounded-xl text-xs font-bold bg-secondary-container text-on-secondary-container hover:bg-secondary-container/80 transition-all flex items-center justify-center gap-1.5"
+                    className="h-9 rounded-full text-xs font-semibold bg-surface-container text-on-surface hover:bg-surface-container-high transition-all flex items-center justify-center gap-1.5"
                   >
                     <Eye className="h-3.5 w-3.5" />
                     Live Kiosk
                   </Link>
                   <Link
                     href={`/dashboard/organizations/${orgSlug}/queues/${q.id}`}
-                    className="h-9 rounded-xl text-xs font-bold bg-surface-container text-on-surface hover:bg-surface-container/80 transition-all flex items-center justify-center gap-1.5"
+                    className="h-9 rounded-full text-xs font-semibold bg-surface-container text-on-surface hover:bg-surface-container-high transition-all flex items-center justify-center gap-1.5"
                   >
                     <Settings className="h-3.5 w-3.5" />
                     Manage
@@ -155,8 +150,8 @@ export function QueuesManager({ queues, currentUserRole, organizationId, orgSlug
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl border border-dashed border-border py-16 text-center bg-card max-w-xl mx-auto space-y-4 shadow-sm">
-          <div className="flex h-12 w-12 mx-auto items-center justify-center rounded-2xl bg-surface-container text-on-surface-variant">
+        <div className="rounded-2xl border border-dashed border-border py-16 text-center bg-surface-low/20 max-w-xl mx-auto space-y-4">
+          <div className="flex h-12 w-12 mx-auto items-center justify-center rounded-full bg-primary/5 text-primary/40">
             <ListOrdered className="h-6 w-6" />
           </div>
           <div className="space-y-1">

@@ -1,16 +1,41 @@
 "use client"
 
+import type { ElementType } from "react"
 import { useState } from "react"
-import { Users, Crown, ShieldCheck, User, Plus, Edit2, Trash2 } from "lucide-react"
+import { Crown, ShieldCheck, User, Plus, Edit2, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CreateMemberForm } from "@/components/members/CreateMemberForm"
 import { EditMemberForm } from "@/components/members/EditMemberForm"
 import { DeleteMemberDialog } from "@/components/members/DeleteMemberDialog"
 
-const ROLE_META: Record<string, { label: string; icon: React.ElementType; className: string }> = {
-  owner: { label: "Owner", icon: Crown, className: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
-  admin: { label: "Admin", icon: ShieldCheck, className: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
-  staff: { label: "Staff", icon: User, className: "bg-secondary/10 text-secondary" },
+const ROLE_META: Record<string, {
+  label: string
+  purpose: string
+  summary: string
+  icon: ElementType
+  className: string
+}> = {
+  owner: {
+    label: "Owner",
+    purpose: "Owns workspace setup, member authority, and organization-level decisions.",
+    summary: "Full control",
+    icon: Crown,
+    className: "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800/30",
+  },
+  admin: {
+    label: "Admin",
+    purpose: "Runs operations by managing queues, services, counters, assignments, and staff.",
+    summary: "Operations manager",
+    icon: ShieldCheck,
+    className: "bg-primary/10 text-primary border border-primary/20",
+  },
+  staff: {
+    label: "Staff",
+    purpose: "Works assigned counters and handles customer tickets during queue sessions.",
+    summary: "Counter operator",
+    icon: User,
+    className: "bg-outline/10 text-outline border border-outline/20",
+  },
 }
 
 interface UserDetail {
@@ -33,12 +58,16 @@ interface Props {
   orgSlug: string
 }
 
-export function MembersManager({ memberships, currentUserId, currentUserRole, organizationId, orgSlug }: Props) {
+export function MembersManager({ memberships, currentUserId, currentUserRole, organizationId, orgSlug, layout = "grid" }: Props & { layout?: "grid" | "sidebar" }) {
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [editingMember, setEditingMember] = useState<any | null>(null)
   const [deletingMember, setDeletingMember] = useState<any | null>(null)
 
   const isAllowedToManage = currentUserRole === "owner" || currentUserRole === "admin"
+  const roleCounts = memberships.reduce<Record<string, number>>((counts, member) => {
+    counts[member.role] = (counts[member.role] ?? 0) + 1
+    return counts
+  }, {})
 
   return (
     <div className="space-y-6">
@@ -62,6 +91,33 @@ export function MembersManager({ memberships, currentUserId, currentUserRole, or
         )}
       </div>
 
+      <div className={layout === "sidebar" ? "flex flex-col gap-3" : "grid gap-3 md:grid-cols-3"}>
+        {(["owner", "admin", "staff"] as const).map((role) => {
+          const meta = ROLE_META[role]
+          const RoleIcon = meta.icon
+
+          return (
+            <div key={role} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${meta.className}`}>
+                  <RoleIcon className="h-5 w-5 shrink-0" />
+                </span>
+                <div className="min-w-0 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-extrabold text-on-surface">{meta.label}</p>
+                    <span className="rounded-full bg-surface-container px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
+                      {roleCounts[role] ?? 0}
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-primary">{meta.summary}</p>
+                  <p className="text-xs leading-relaxed text-on-surface-variant">{meta.purpose}</p>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
       {/* Members Grid/List */}
       <div className="rounded-2xl bg-card border border-border overflow-hidden divide-y divide-border">
         {memberships.map((m) => {
@@ -71,15 +127,12 @@ export function MembersManager({ memberships, currentUserId, currentUserRole, or
           const canDelete =
             isAllowedToManage &&
             !isYou &&
-            // Admins cannot remove owners
-            !(currentUserRole === "admin" && m.role === "owner") &&
-            // Cannot remove the last owner (if they are owner, owner can be removed by other owners, but usually owner is protected)
             m.role !== "owner"
 
           const canEdit =
             isAllowedToManage &&
             !isYou &&
-            !(currentUserRole === "admin" && m.role === "owner")
+            m.role !== "owner"
 
           return (
             <div key={m.id} className="flex items-center justify-between p-4 gap-4 hover:bg-surface-low/30 transition-colors">
@@ -99,9 +152,12 @@ export function MembersManager({ memberships, currentUserId, currentUserRole, or
               </div>
 
               <div className="flex items-center gap-4 shrink-0">
-                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${meta.className}`}>
-                  <RoleIcon className="h-3 w-3" />
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${meta.className}`}>
+                  <RoleIcon className="h-3 w-3 shrink-0" />
                   {meta.label}
+                </span>
+                <span className="hidden max-w-[16rem] text-xs text-on-surface-variant lg:block">
+                  {meta.summary}
                 </span>
 
                 {/* Management Controls */}

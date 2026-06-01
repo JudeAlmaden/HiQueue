@@ -80,8 +80,17 @@ export async function getStaffCountersForOrg(userId: string, organizationId?: st
         select: {
           id: true,
           name: true,
+          isActive: true,
           organizationId: true,
         },
+      },
+      services: {
+        select: {
+          id: true,
+          name: true,
+          isActive: true,
+        },
+        orderBy: { name: "asc" },
       },
     },
     orderBy: {

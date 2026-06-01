@@ -10,6 +10,19 @@ import { Button } from "@/components/ui/button"
 import { FormError } from "@/components/ui/form-error"
 import { X, Loader2 } from "lucide-react"
 
+const ROLE_OPTIONS = [
+  {
+    value: "admin",
+    label: "Admin",
+    purpose: "Operations manager — configures queues, counters, services, assignments, and staff.",
+  },
+  {
+    value: "staff",
+    label: "Staff",
+    purpose: "Counter operator — serves customers only from assigned counters.",
+  },
+]
+
 interface Member {
   id: string
   name: string | null
@@ -112,10 +125,19 @@ export function EditMemberForm({ member, organizationId, orgSlug, onClose }: Pro
               disabled={isLoading}
               defaultValue={member.role}
             >
-              <option value="owner">Owner</option>
-              <option value="admin">Admin</option>
-              <option value="staff">Staff</option>
+              {ROLE_OPTIONS.map((role) => (
+                <option key={role.value} value={role.value}>
+                  {role.label}
+                </option>
+              ))}
             </select>
+            <div className="space-y-1 rounded-xl bg-surface-container/60 p-3">
+              {ROLE_OPTIONS.map((role) => (
+                <p key={role.value} className="text-[11px] leading-relaxed text-on-surface-variant">
+                  <span className="font-bold text-on-surface">{role.label}:</span> {role.purpose}
+                </p>
+              ))}
+            </div>
           </div>
 
           <div className="flex items-center justify-end gap-3 border-t border-border pt-4">

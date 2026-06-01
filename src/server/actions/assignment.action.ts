@@ -27,6 +27,7 @@ export async function assignStaffAction(input: {
 
   if (res.success && input.orgSlug) {
     revalidatePath(`/dashboard/organizations/${input.orgSlug}/assignments`)
+    revalidatePath(`/dashboard/organizations/${input.orgSlug}/queues`)
   }
 
   return res
@@ -52,6 +53,7 @@ export async function unassignStaffAction(input: {
 
   if (res.success && input.orgSlug) {
     revalidatePath(`/dashboard/organizations/${input.orgSlug}/assignments`)
+    revalidatePath(`/dashboard/organizations/${input.orgSlug}/queues`)
   }
 
   return res

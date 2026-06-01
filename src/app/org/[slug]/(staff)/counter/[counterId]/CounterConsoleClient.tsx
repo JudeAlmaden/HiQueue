@@ -1,7 +1,7 @@
 ﻿"use client"
 
 import { useState, useEffect } from "react"
-import { useToast } from "@/components/ui/toast"
+import { parseCustomerName } from "@/lib/customer-utils"
 import {
   Play,
   CheckCircle,
@@ -28,6 +28,7 @@ import {
   skipTicketAction
 } from "@/server/actions/counterConsole.action"
 import { Button } from "@/components/ui/button"
+import { useToast } from "@/components/ui/toast"
 import Link from "next/link"
 
 interface Service {
@@ -35,6 +36,7 @@ interface Service {
   name: string
   prefix: string
   avgDurationMinutes: number | null
+  isActive: boolean
 }
 
 interface Counter {
@@ -43,6 +45,11 @@ interface Counter {
   queueId: string
   currentTicketId: string | null
   services: Service[]
+  queue?: {
+    id: string
+    name: string
+    isActive: boolean
+  }
 }
 
 interface Ticket {
@@ -165,12 +172,7 @@ export default function CounterConsoleClient({
 
   // Helpers
   const getCustomerName = (ticket: Ticket) => {
-    try {
-      const customerObj = JSON.parse(ticket.customer || "{}")
-      return customerObj.name || "Anonymous Customer"
-    } catch {
-      return "Anonymous Customer"
-    }
+    return parseCustomerName(ticket.customer) || "Anonymous Customer"
   }
 
   const formatElapsed = (sec: number) => {
@@ -369,6 +371,13 @@ export default function CounterConsoleClient({
             <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">
               {counter.services.map((s) => s.name).join(", ")}
             </span>
+            {counter.queue && (
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                counter.queue.isActive ? "bg-primary/10 text-primary" : "bg-error/10 text-error"
+              }`}>
+                {counter.queue.isActive ? "Queue Open" : "Queue Closed"}
+              </span>
+            )}
           </div>
         </div>
 
@@ -427,13 +436,18 @@ export default function CounterConsoleClient({
                   onClick={() => counter.services.length > 1 ? setSelectedServiceId(selectedServiceId === s.id ? null : s.id) : null}
                   className={`px-3 py-1 rounded-full text-xs font-bold transition-all border ${
                     isOnlyService
-                      ? "bg-primary text-on-primary border-primary shadow-sm cursor-default"
+                      ? s.isActive
+                        ? "bg-primary text-on-primary border-primary shadow-sm cursor-default"
+                        : "bg-error/10 text-error border-error/20 cursor-default"
                       : isSelected
-                      ? "bg-primary text-on-primary border-primary shadow-sm cursor-pointer"
-                      : "bg-transparent text-on-surface-variant border-border hover:border-primary/50 hover:text-primary cursor-pointer"
+                        ? "bg-primary text-on-primary border-primary shadow-sm cursor-pointer"
+                        : s.isActive
+                          ? "bg-transparent text-on-surface-variant border-border hover:border-primary/50 hover:text-primary cursor-pointer"
+                          : "bg-error/5 text-error border-error/20 hover:border-error/40 cursor-pointer"
                   }`}
                 >
                   {s.name}
+                  {!s.isActive && <span className="ml-1 opacity-80">(closed)</span>}
                   <span className={`ml-1.5 text-[10px] font-black px-1.5 py-0.5 rounded-full ${
                     isSelected || isOnlyService ? "bg-on-primary/20" : "bg-surface-container"
                   }`}>

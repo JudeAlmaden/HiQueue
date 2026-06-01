@@ -2,15 +2,24 @@ import * as counterRepo from "@/server/repositories/counter.repo"
 import { ok, fail, ActionResult } from "@/server/lib/action-utils"
 import { CreateCounterInput, UpdateCounterInput } from "@/server/validators/counter.validator"
 import { db } from "@/server/lib/db"
+import { hasOrganizationRole } from "@/server/lib/permissions"
 
-/**
- * Check if user is owner or admin in the organization.
- */
-async function checkAdminOrOwner(userId: string, organizationId: string): Promise<boolean> {
-  const membership = await db.organizationMembership.findUnique({
-    where: { userId_organizationId: { userId, organizationId } },
+async function checkOwner(userId: string, organizationId: string): Promise<boolean> {
+  return hasOrganizationRole(userId, organizationId, ["owner"])
+}
+
+async function normalizeServiceIdsForQueue(serviceIds: string[] | undefined, queueId: string) {
+  const uniqueServiceIds = [...new Set(serviceIds ?? [])]
+  if (uniqueServiceIds.length === 0) return uniqueServiceIds
+
+  const matchingServiceCount = await db.service.count({
+    where: {
+      id: { in: uniqueServiceIds },
+      queueId,
+    },
   })
-  return !!membership && (membership.role === "owner" || membership.role === "admin")
+
+  return matchingServiceCount === uniqueServiceIds.length ? uniqueServiceIds : null
 }
 
 /**
@@ -22,7 +31,7 @@ export async function createCounter(
   organizationId: string
 ): Promise<ActionResult<any>> {
   try {
-    const isAuthorized = await checkAdminOrOwner(userId, organizationId)
+    const isAuthorized = await checkOwner(userId, organizationId)
     if (!isAuthorized) {
       return fail("You don't have permission to perform this action")
     }
@@ -36,6 +45,11 @@ export async function createCounter(
       return fail("Queue not found or does not belong to your organization")
     }
 
+    const serviceIds = await normalizeServiceIdsForQueue(input.serviceIds, input.queueId)
+    if (serviceIds === null) {
+      return fail("One or more services do not belong to this queue")
+    }
+
     // Check duplicate counter name in same queue
     const duplicate = await counterRepo.findCounterByName(input.name, input.queueId)
     if (duplicate) {
@@ -45,7 +59,7 @@ export async function createCounter(
     const counter = await counterRepo.createCounter({
       name: input.name,
       queueId: input.queueId,
-      serviceIds: input.serviceIds,
+      serviceIds,
     })
 
     return ok(counter)
@@ -64,7 +78,7 @@ export async function updateCounter(
   organizationId: string
 ): Promise<ActionResult<any>> {
   try {
-    const isAuthorized = await checkAdminOrOwner(userId, organizationId)
+    const isAuthorized = await checkOwner(userId, organizationId)
     if (!isAuthorized) {
       return fail("You don't have permission to perform this action")
     }
@@ -78,6 +92,11 @@ export async function updateCounter(
       return fail("Counter not found or does not belong to your organization")
     }
 
+    const serviceIds = await normalizeServiceIdsForQueue(input.serviceIds, counter.queueId)
+    if (serviceIds === null) {
+      return fail("One or more services do not belong to this queue")
+    }
+
     // Check duplicate counter name in same queue
     const duplicate = await counterRepo.findCounterByName(input.name, counter.queueId)
     if (duplicate && duplicate.id !== counter.id) {
@@ -86,7 +105,7 @@ export async function updateCounter(
 
     const updated = await counterRepo.updateCounter(input.id, {
       name: input.name,
-      serviceIds: input.serviceIds,
+      serviceIds,
     })
 
     return ok(updated)
@@ -105,7 +124,7 @@ export async function deleteCounter(
   organizationId: string
 ): Promise<ActionResult<void>> {
   try {
-    const isAuthorized = await checkAdminOrOwner(userId, organizationId)
+    const isAuthorized = await checkOwner(userId, organizationId)
     if (!isAuthorized) {
       return fail("You don't have permission to perform this action")
     }

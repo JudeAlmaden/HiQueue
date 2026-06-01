@@ -1,6 +1,11 @@
 "use server"
 
-import { createQueueSchema, updateQueueSchema, deleteQueueSchema } from "@/server/validators/queue.validator"
+import {
+  createQueueSchema,
+  updateQueueSchema,
+  deleteQueueSchema,
+  setQueueActiveSchema,
+} from "@/server/validators/queue.validator"
 import * as queueService from "@/server/services/queue.service"
 import { fail } from "@/server/lib/action-utils"
 import { auth } from "@/auth"
@@ -98,6 +103,40 @@ export async function deleteQueueAction(input: { id: string; organizationId: str
   if (res.success && input.orgSlug) {
     revalidatePath(`/dashboard/organizations/${input.orgSlug}`)
     revalidatePath(`/dashboard/organizations/${input.orgSlug}/queues`)
+  }
+
+  return res
+}
+
+export async function setQueueActiveAction(input: {
+  id: string
+  isActive: boolean
+  organizationId: string
+  orgSlug?: string
+}) {
+  const session = await auth()
+  const userId = session?.user?.id
+
+  if (!userId) return fail("Unauthorized")
+
+  const result = setQueueActiveSchema.safeParse(input)
+
+  if (!result.success) {
+    return fail(result.error.issues[0].message)
+  }
+
+  const res = await queueService.setQueueActive(
+    result.data.id,
+    result.data.isActive,
+    userId,
+    result.data.organizationId
+  )
+
+  if (res.success && result.data.orgSlug) {
+    revalidatePath(`/dashboard/organizations/${result.data.orgSlug}`)
+    revalidatePath(`/dashboard/organizations/${result.data.orgSlug}/queues`)
+    revalidatePath(`/dashboard/organizations/${result.data.orgSlug}/queues/${result.data.id}`)
+    revalidatePath(`/live/${result.data.id}`)
   }
 
   return res

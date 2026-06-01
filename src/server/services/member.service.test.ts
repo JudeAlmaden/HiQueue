@@ -68,7 +68,7 @@ describe("MemberService", () => {
       }
     })
 
-    it("should create member with valid data when user is admin", async () => {
+    it("should reject member creation when user is admin", async () => {
       // Mock user is admin
       vi.mocked(db.organizationMembership.findUnique).mockResolvedValue({
         id: "membership-1",
@@ -79,26 +79,13 @@ describe("MemberService", () => {
         updatedAt: new Date(),
       })
 
-      // Mock no existing member
-      vi.mocked(memberRepo.findMemberByEmail).mockResolvedValue(null)
-
-      // Mock successful creation
-      vi.mocked(memberRepo.createMember).mockResolvedValue({
-        id: mockMemberId,
-        name: "John Doe",
-        email: "john@example.com",
-        password: "hashed",
-        emailVerified: null,
-        image: null,
-        isActive: true,
-        createdById: mockUserId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-
       const result = await memberService.createMember(validInput, mockUserId)
 
-      expect(result.success).toBe(true)
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error).toContain("owners")
+      }
+      expect(memberRepo.createMember).not.toHaveBeenCalled()
     })
 
     it("should reject if user is not a member of organization", async () => {
@@ -195,30 +182,21 @@ describe("MemberService", () => {
       expect(result.success).toBe(true)
     })
 
-    it("should reject if admin tries to remove owner", async () => {
-      vi.mocked(db.organizationMembership.findUnique)
-        .mockResolvedValueOnce({
-          id: "membership-1",
-          userId: mockUserId,
-          organizationId: mockOrgId,
-          role: "admin",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .mockResolvedValueOnce({
-          id: "membership-2",
-          userId: mockMemberId,
-          organizationId: mockOrgId,
-          role: "owner",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
+    it("should reject if admin tries to remove a member", async () => {
+      vi.mocked(db.organizationMembership.findUnique).mockResolvedValue({
+        id: "membership-1",
+        userId: mockUserId,
+        organizationId: mockOrgId,
+        role: "admin",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
 
       const result = await memberService.deleteMember(deleteInput, mockUserId)
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error).toContain("cannot remove")
+        expect(result.error).toContain("owners")
       }
     })
 

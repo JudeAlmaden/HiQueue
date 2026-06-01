@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { CreateCounterForm } from "./CreateCounterForm"
 import { EditCounterForm } from "./EditCounterForm"
 import { DeleteCounterDialog } from "./DeleteCounterDialog"
+import { CounterDetailDialog } from "./CounterDetailDialog"
 
 interface Service {
   id: string
@@ -13,11 +14,19 @@ interface Service {
   prefix: string
 }
 
+interface Staff {
+  id: string
+  name: string | null
+  email: string | null
+  isActive: boolean
+}
+
 interface Counter {
   id: string
   name: string
   isActive: boolean
   services?: Service[]
+  assignedStaff?: Staff[]
 }
 
 interface Props {
@@ -27,12 +36,19 @@ interface Props {
   currentUserRole: string
   organizationId: string
   orgSlug: string
+  organizationMembers: Array<{
+    id: string
+    name: string | null
+    email: string | null
+    role: string
+  }>
 }
 
-export function CounterList({ counters, services, queueId, currentUserRole, organizationId, orgSlug }: Props) {
+export function CounterList({ counters, services, queueId, currentUserRole, organizationId, orgSlug, organizationMembers }: Props) {
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [editingCounter, setEditingCounter] = useState<Counter | null>(null)
   const [deletingCounter, setDeletingCounter] = useState<Counter | null>(null)
+  const [viewingCounter, setViewingCounter] = useState<Counter | null>(null)
 
   const isAllowedToManage = currentUserRole === "owner" || currentUserRole === "admin"
 
@@ -62,62 +78,57 @@ export function CounterList({ counters, services, queueId, currentUserRole, orga
           {counters.map((c) => (
             <div
               key={c.id}
-              className="flex items-center justify-between p-3.5 rounded-xl bg-card border border-border/80 shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-200"
+              className="group flex items-center justify-between p-4 rounded-xl bg-card border border-border hover:border-primary/20 hover:shadow-sm transition-all duration-200 cursor-pointer"
+              onClick={() => setViewingCounter(c)}
             >
-              <div className="flex items-center gap-3.5 min-w-0">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs">
-                  <Monitor className="h-4.5 w-4.5" />
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Monitor className="h-4 w-4" />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-on-surface truncate">{c.name}</p>
-                  
-                  {/* Service badges */}
-                  <div className="flex flex-wrap gap-1 mt-1.5">
-                    {c.services && c.services.length > 0 ? (
-                      c.services.map((srv) => (
-                        <span
-                          key={srv.id}
-                          className="inline-flex items-center text-[9px] font-bold bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-full"
-                        >
-                          {srv.name}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="inline-flex items-center text-[9px] font-semibold bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded-full">
-                        All Services
-                      </span>
-                    )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-on-surface">{c.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-on-surface-variant">
+                    <span>
+                      {c.assignedStaff && c.assignedStaff.length > 0 
+                        ? `${c.assignedStaff.length} staff`
+                        : "No staff"}
+                    </span>
+                    <span className="text-on-surface-variant/40">•</span>
+                    <span>
+                      {c.services && c.services.length > 0 
+                        ? `${c.services.length} service${c.services.length > 1 ? 's' : ''}`
+                        : "All services"}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {isAllowedToManage && (
-                <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-1 shrink-0">
+                {isAllowedToManage && (
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setEditingCounter(c)}
-                    className="h-8 w-8 text-on-surface-variant hover:text-primary rounded-full hover:bg-surface-low"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setEditingCounter(c)
+                    }}
+                    className="h-8 w-8 text-on-surface-variant hover:text-on-surface rounded-full hover:bg-surface-container"
+                    title="Edit counter"
                   >
                     <Edit2 className="h-3.5 w-3.5" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setDeletingCounter(c)}
-                    className="h-8 w-8 text-on-surface-variant hover:text-error rounded-full hover:bg-error/5"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed border-border/80 py-10 text-center bg-surface-low/20">
-          <Monitor className="h-6 w-6 mx-auto text-on-surface-variant/40 mb-1.5" />
-          <p className="text-xs text-on-surface-variant font-medium">No counters configured yet</p>
+        <div className="rounded-xl border border-dashed border-border py-10 text-center bg-surface-low/20">
+          <span className="flex h-10 w-10 mx-auto items-center justify-center rounded-full bg-primary/5 text-primary/40 mb-3">
+            <Monitor className="h-5 w-5" />
+          </span>
+          <p className="text-xs text-on-surface font-bold">No Counters Configured</p>
+          <p className="text-[11px] text-on-surface-variant mt-0.5">Add a counter to start directing queue flow.</p>
         </div>
       )}
 
@@ -151,6 +162,24 @@ export function CounterList({ counters, services, queueId, currentUserRole, orga
           organizationId={organizationId}
           orgSlug={orgSlug}
           onClose={() => setDeletingCounter(null)}
+        />
+      )}
+
+      {viewingCounter && (
+        <CounterDetailDialog
+          counter={viewingCounter}
+          organizationMembers={organizationMembers}
+          organizationId={organizationId}
+          orgSlug={orgSlug}
+          onClose={() => setViewingCounter(null)}
+          onEdit={isAllowedToManage ? () => {
+            setViewingCounter(null)
+            setEditingCounter(viewingCounter)
+          } : undefined}
+          onDelete={isAllowedToManage ? () => {
+            setViewingCounter(null)
+            setDeletingCounter(viewingCounter)
+          } : undefined}
         />
       )}
     </div>

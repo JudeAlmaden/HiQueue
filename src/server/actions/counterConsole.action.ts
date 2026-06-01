@@ -24,7 +24,7 @@ async function verifyCounterStaff(counterId: string) {
     include: { organization: true },
   })
 
-  let isOrgMember = false
+  let isOwner = false
   if (queue) {
     const membership = await db.organizationMembership.findFirst({
       where: {
@@ -33,15 +33,41 @@ async function verifyCounterStaff(counterId: string) {
       },
     })
     if (membership) {
-      isOrgMember = true
+      isOwner = membership.role === "owner"
     }
   }
 
-  if (!isAssigned && !isOrgMember) {
+  if (!isAssigned && !isOwner) {
     return { success: false as const, error: "You are not assigned to this counter" }
   }
 
   return { success: true as const, counter, queue, userId }
+}
+
+async function verifyTicketForCounter(
+  ticketId: string,
+  counter: NonNullable<Awaited<ReturnType<typeof getCounterById>>>
+) {
+  const ticket = await db.ticket.findUnique({
+    where: { id: ticketId },
+    select: {
+      queueId: true,
+      serviceId: true,
+    },
+  })
+
+  if (!ticket || ticket.queueId !== counter.queueId) {
+    return { success: false as const, error: "Ticket not found for this counter" }
+  }
+
+  if (
+    counter.services.length > 0 &&
+    !counter.services.some((service) => service.id === ticket.serviceId)
+  ) {
+    return { success: false as const, error: "Ticket service is not assigned to this counter" }
+  }
+
+  return { success: true as const }
 }
 
 async function getCurrentSessionTicketId(
@@ -109,7 +135,10 @@ export async function callSpecificTicketAction(
   try {
     const verification = await verifyCounterStaff(counterId)
     if (!verification.success) return fail(verification.error)
-    const { queue } = verification
+    const { counter, queue } = verification
+
+    const ticketVerification = await verifyTicketForCounter(ticketId, counter)
+    if (!ticketVerification.success) return fail(ticketVerification.error)
 
     const updatedTicket = await ticketRepo.callTicket(ticketId, counterId)
 
@@ -212,7 +241,10 @@ export async function recallFromHoldAction(
   try {
     const verification = await verifyCounterStaff(counterId)
     if (!verification.success) return fail(verification.error)
-    const { queue } = verification
+    const { counter, queue } = verification
+
+    const ticketVerification = await verifyTicketForCounter(ticketId, counter)
+    if (!ticketVerification.success) return fail(ticketVerification.error)
 
     const updatedTicket = await ticketRepo.recallFromHold(ticketId, counterId)
 
@@ -259,7 +291,10 @@ export async function skipTicketAction(
   try {
     const verification = await verifyCounterStaff(counterId)
     if (!verification.success) return fail(verification.error)
-    const { queue } = verification
+    const { counter, queue } = verification
+
+    const ticketVerification = await verifyTicketForCounter(ticketId, counter)
+    if (!ticketVerification.success) return fail(ticketVerification.error)
 
     const updatedTicket = await ticketRepo.skipTicket(ticketId, counterId)
 

@@ -43,6 +43,7 @@ export async function updateQueue(
     passcode?: string | null
     theme?: object
     layout?: object
+    isActive?: boolean
   }
 ) {
   // Convert objects to JSON strings for SQLite compatibility
@@ -53,6 +54,7 @@ export async function updateQueue(
   if (data.passcode !== undefined) updateData.passcode = data.passcode
   if (data.theme !== undefined) updateData.theme = JSON.stringify(data.theme)
   if (data.layout !== undefined) updateData.layout = JSON.stringify(data.layout)
+  if (data.isActive !== undefined) updateData.isActive = data.isActive
 
   return db.queue.update({
     where: { id },
@@ -98,6 +100,14 @@ export async function getQueueById(id: string) {
       counters: {
         include: {
           services: true,
+          assignedStaff: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              isActive: true,
+            },
+          },
         },
         orderBy: { name: "asc" },
       },

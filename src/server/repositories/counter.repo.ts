@@ -84,6 +84,13 @@ export async function getQueueCounters(queueId: string) {
     where: { queueId },
     include: {
       services: true,
+      queue: {
+        select: {
+          id: true,
+          name: true,
+          isActive: true,
+        },
+      },
       currentTicket: {
         select: {
           queueSessionId: true,
@@ -97,7 +104,7 @@ export async function getQueueCounters(queueId: string) {
   return counters.map(({ currentTicket, ...counter }) => ({
     ...counter,
     currentTicketId:
-      currentTicket?.queueSessionId === todaySession?.id && currentTicket.status === "serving"
+      currentTicket?.queueSessionId === todaySession?.id && currentTicket?.status === "serving"
         ? counter.currentTicketId
         : null,
   }))

@@ -7,79 +7,147 @@ import { registerUser } from "@/server/actions/auth.action"
 import { useState } from "react"
 import Link from "next/link"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Layers, Globe, GitBranch, ArrowLeft } from "lucide-react"
+import { Layers, Globe, Apple, ArrowRight } from "lucide-react"
 
 export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: "var(--background)", color: "var(--on-surface)" }}>
-
-      {/* Floating Theme Toggle */}
-      <div className="absolute top-4 right-4 z-50">
+    <div className="min-h-screen flex" style={{ backgroundColor: "var(--background)" }}>
+      {/* Theme Toggle */}
+      <div className="absolute top-6 right-6 z-50">
         <ThemeToggle />
       </div>
 
-      {/* Left Column - Brand Panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center p-12" style={{ backgroundColor: "var(--surface-container-low)" }}>
-        <div className="absolute top-0 left-0 w-96 h-96 rounded-full opacity-10" style={{ backgroundColor: "var(--primary)", filter: "blur(80px)", transform: "translate(-30%, -30%)" }} />
-        <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full opacity-10" style={{ backgroundColor: "var(--secondary)", filter: "blur(60px)", transform: "translate(30%, 30%)" }} />
+      {/* Left Panel - Visual/Image Section */}
+      <div 
+        className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center p-12"
+        style={{ 
+          backgroundColor: "var(--primary)",
+          backgroundImage: "linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)"
+        }}
+      >
+        {/* Animated Blobs */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Blob 1 */}
+          <div 
+            className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-20 blur-3xl"
+            style={{ 
+              backgroundColor: "var(--on-primary)",
+              animation: "blob 7s infinite"
+            }}
+          />
+          {/* Blob 2 */}
+          <div 
+            className="absolute top-1/3 right-1/4 w-80 h-80 rounded-full opacity-15 blur-3xl"
+            style={{ 
+              backgroundColor: "var(--on-primary)",
+              animation: "blob 9s infinite 2s"
+            }}
+          />
+          {/* Blob 3 */}
+          <div 
+            className="absolute bottom-1/4 left-1/3 w-72 h-72 rounded-full opacity-25 blur-3xl"
+            style={{ 
+              backgroundColor: "var(--on-primary)",
+              animation: "blob 11s infinite 4s"
+            }}
+          />
+        </div>
 
-        <div className="z-10 w-full max-w-lg space-y-8">
-          <div className="space-y-4">
-            <span className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-semibold" style={{ backgroundColor: "var(--secondary-container)", color: "var(--on-secondary-container)" }}>
-              ✦ Start Serving Better
-            </span>
-            <h2 className="text-4xl font-bold leading-tight" style={{ color: "var(--on-surface)", letterSpacing: "-0.02em" }}>
-              Modernize the way customers wait, book, and get served.
-            </h2>
-            <p className="leading-relaxed" style={{ color: "var(--on-surface-variant)", opacity: 0.85 }}>
-              Create your HiQueue workspace today. Set up service desks, issue tickets, and bring organic hospitality to your queue management.
-            </p>
-          </div>
-
-          <div className="space-y-3">
+        {/* Content */}
+        <div className="relative z-10 max-w-lg space-y-6" style={{ color: "var(--on-primary)" }}>
+          <h2 className="text-5xl font-bold leading-tight">
+            Queues can be long, but the wait shouldn&apos;t be.
+          </h2>
+          <p className="text-lg leading-relaxed opacity-90">
+            Experience the art of managing your time without the stress of standing in line.
+          </p>
+          
+          {/* Feature list */}
+          <div className="space-y-3 pt-4">
             {[
-              { icon: "✓", text: "No credit card required" },
-              { icon: "✓", text: "Set up in under 2 minutes" },
-              { icon: "✓", text: "Multi-desk and multi-agent support" },
-            ].map((item) => (
-              <div key={item.text} className="flex items-center gap-3">
-                <div className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: "var(--primary)", color: "var(--on-primary)" }}>
-                  {item.icon}
+              "Real-time queue management",
+              "Multi-service support",
+              "Staff portal & analytics"
+            ].map((feature) => (
+              <div key={feature} className="flex items-center gap-3">
+                <div 
+                  className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
+                  style={{ 
+                    backgroundColor: "var(--on-primary)",
+                    color: "var(--primary)"
+                  }}
+                >
+                  ✓
                 </div>
-                <span className="text-sm font-medium" style={{ color: "var(--on-surface)" }}>{item.text}</span>
+                <span className="text-sm font-medium opacity-90">{feature}</span>
               </div>
             ))}
           </div>
         </div>
+
+        {/* Blob animation styles */}
+        <style jsx>{`
+          @keyframes blob {
+            0%, 100% {
+              transform: translate(0, 0) scale(1);
+            }
+            33% {
+              transform: translate(30px, -50px) scale(1.1);
+            }
+            66% {
+              transform: translate(-20px, 20px) scale(0.9);
+            }
+          }
+        `}</style>
       </div>
 
-      {/* Right Column - Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 md:p-16">
+      {/* Right Panel - Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
         <div className="w-full max-w-md space-y-8">
-
           {/* Logo */}
           <div className="flex flex-col space-y-3">
-            <div className="flex items-center gap-2.5 mb-1">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl text-white font-bold shadow-lg" style={{ backgroundColor: "var(--primary)", boxShadow: "0 4px 14px rgba(44,74,62,0.25)" }}>
+            <div className="flex items-center gap-2.5 mb-2">
+              <div 
+                className="flex h-10 w-10 items-center justify-center rounded-xl shadow-sm"
+                style={{ 
+                  backgroundColor: "var(--primary)",
+                  color: "var(--on-primary)"
+                }}
+              >
                 <Layers className="h-5 w-5" />
               </div>
-              <span className="text-xl font-bold tracking-tight" style={{ color: "var(--on-surface)" }}>
+              <span 
+                className="text-xl font-bold"
+                style={{ color: "var(--on-surface)" }}
+              >
                 HiQueue
               </span>
             </div>
-            <h1 className="text-4xl font-bold tracking-tight leading-tight" style={{ color: "var(--on-surface)", letterSpacing: "-0.02em" }}>
-              Create account
+            <h1 
+              className="text-3xl font-bold leading-tight"
+              style={{ color: "var(--on-surface)" }}
+            >
+              Create your account
             </h1>
-            <p className="text-base leading-relaxed" style={{ color: "var(--on-surface-variant)" }}>
-              Set up your agent credentials to get started.
+            <p 
+              className="text-sm leading-relaxed"
+              style={{ color: "var(--on-surface-variant)" }}
+            >
+              Step into a world of managed moments and calm queues.
             </p>
           </div>
 
           {error && (
-            <div className="rounded-xl p-4 text-sm" style={{ backgroundColor: "var(--error-container)", color: "var(--on-error-container)", border: "1px solid var(--error)" }}>
+            <div 
+              className="rounded-xl p-3 text-sm"
+              style={{ 
+                backgroundColor: "var(--error-container)",
+                color: "var(--on-error-container)"
+              }}
+            >
               {error}
             </div>
           )}
@@ -94,94 +162,176 @@ export default function RegisterPage() {
                 setIsLoading(false)
               }
             }}
-            className="space-y-5"
+            className="space-y-4"
           >
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-semibold" style={{ color: "var(--on-surface-variant)", letterSpacing: "0.01em" }}>
+              <Label 
+                htmlFor="name"
+                className="text-sm font-medium"
+                style={{ color: "var(--on-surface-variant)" }}
+              >
                 Full Name
               </Label>
               <Input
                 id="name"
                 name="name"
                 type="text"
-                placeholder="Alex Mercer"
-                className="rounded-xl h-12 text-sm border-0 focus-visible:ring-2 transition-all"
-                style={{ backgroundColor: "var(--surface-container)", color: "var(--on-surface)", outline: "1px solid var(--outline-variant)" }}
+                placeholder="Enter your full name"
+                className="rounded-xl h-11 text-sm border-0"
+                style={{ 
+                  backgroundColor: "var(--surface-container)",
+                  color: "var(--on-surface)"
+                }}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-semibold" style={{ color: "var(--on-surface-variant)", letterSpacing: "0.01em" }}>
+              <Label 
+                htmlFor="email"
+                className="text-sm font-medium"
+                style={{ color: "var(--on-surface-variant)" }}
+              >
                 Email Address
               </Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
-                placeholder="name@company.com"
-                className="rounded-xl h-12 text-sm border-0 focus-visible:ring-2 transition-all"
-                style={{ backgroundColor: "var(--surface-container)", color: "var(--on-surface)", outline: "1px solid var(--outline-variant)" }}
+                placeholder="example@email.com"
+                className="rounded-xl h-11 text-sm border-0"
+                style={{ 
+                  backgroundColor: "var(--surface-container)",
+                  color: "var(--on-surface)"
+                }}
                 required
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-semibold" style={{ color: "var(--on-surface-variant)", letterSpacing: "0.01em" }}>
-                Password
-              </Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                className="rounded-xl h-12 text-sm border-0 focus-visible:ring-2 transition-all"
-                style={{ backgroundColor: "var(--surface-container)", color: "var(--on-surface)", outline: "1px solid var(--outline-variant)" }}
-                required
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label 
+                  htmlFor="password"
+                  className="text-sm font-medium"
+                  style={{ color: "var(--on-surface-variant)" }}
+                >
+                  Password
+                </Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="••••••••"
+                  className="rounded-xl h-11 text-sm border-0"
+                  style={{ 
+                    backgroundColor: "var(--surface-container)",
+                    color: "var(--on-surface)"
+                  }}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label 
+                  htmlFor="confirmPassword"
+                  className="text-sm font-medium"
+                  style={{ color: "var(--on-surface-variant)" }}
+                >
+                  Confirm Password
+                </Label>
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  className="rounded-xl h-11 text-sm border-0"
+                  style={{ 
+                    backgroundColor: "var(--surface-container)",
+                    color: "var(--on-surface)"
+                  }}
+                  required
+                />
+              </div>
             </div>
 
             <Button
               disabled={isLoading}
               type="submit"
-              className="w-full h-12 rounded-full font-semibold text-sm transition-all shadow-lg hover:opacity-90"
-              style={{ backgroundColor: "var(--primary)", color: "var(--on-primary)", boxShadow: "0 4px 14px rgba(44,74,62,0.3)" }}
+              className="w-full h-11 rounded-full font-semibold text-sm transition-all"
+              style={{ 
+                backgroundColor: "var(--primary)",
+                color: "var(--on-primary)"
+              }}
             >
-              {isLoading ? "Creating account..." : "Sign Up"}
+              {isLoading ? "Creating account..." : "Create Account"}
+              <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </form>
+
+          <p 
+            className="text-center text-sm"
+            style={{ color: "var(--on-surface-variant)" }}
+          >
+            Already have an account?{" "}
+            <Link 
+              href="/login"
+              className="font-semibold hover:underline"
+              style={{ color: "var(--primary)" }}
+            >
+              Sign in
+            </Link>
+          </p>
 
           <div className="space-y-4">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" style={{ borderColor: "var(--outline-variant)" }} />
+                <span 
+                  className="w-full border-t"
+                  style={{ borderColor: "var(--outline-variant)" }}
+                />
               </div>
-              <div className="relative flex justify-center text-xs uppercase tracking-wider">
-                <span className="px-3 font-medium" style={{ backgroundColor: "var(--background)", color: "var(--on-surface-variant)" }}>
-                  Or sign up with
+              <div className="relative flex justify-center text-xs uppercase">
+                <span 
+                  className="px-3 font-medium"
+                  style={{ 
+                    backgroundColor: "var(--background)",
+                    color: "var(--on-surface-variant)"
+                  }}
+                >
+                  Or register with
                 </span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="h-11 rounded-full font-medium text-sm border transition-all hover:opacity-80" style={{ borderColor: "var(--outline-variant)", backgroundColor: "var(--surface-container-low)", color: "var(--on-surface)" }}>
-                <GitBranch className="h-4 w-4 mr-2" /> GitHub
-              </Button>
-              <Button variant="outline" className="h-11 rounded-full font-medium text-sm border transition-all hover:opacity-80" style={{ borderColor: "var(--outline-variant)", backgroundColor: "var(--surface-container-low)", color: "var(--on-surface)" }}>
+              <Button
+                variant="outline"
+                type="button"
+                className="h-10 rounded-full font-medium text-sm transition-all"
+                style={{ 
+                  backgroundColor: "var(--surface-container)",
+                  color: "var(--on-surface)",
+                  borderColor: "var(--outline-variant)"
+                }}
+              >
                 <Globe className="h-4 w-4 mr-2" /> Google
+              </Button>
+              <Button
+                variant="outline"
+                type="button"
+                className="h-10 rounded-full font-medium text-sm transition-all"
+                style={{ 
+                  backgroundColor: "var(--surface-container)",
+                  color: "var(--on-surface)",
+                  borderColor: "var(--outline-variant)"
+                }}
+              >
+                <Apple className="h-4 w-4 mr-2" /> Apple
               </Button>
             </div>
           </div>
-
-          <p className="text-center text-sm" style={{ color: "var(--on-surface-variant)" }}>
-            Already have an account?{" "}
-            <Link href="/login" className="font-semibold hover:underline inline-flex items-center gap-1" style={{ color: "var(--primary)" }}>
-              <ArrowLeft className="h-3 w-3" /> Sign in
-            </Link>
-          </p>
         </div>
       </div>
-
     </div>
   )
 }

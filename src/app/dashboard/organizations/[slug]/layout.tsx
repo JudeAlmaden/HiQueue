@@ -58,17 +58,13 @@ export default async function OrgDashboardLayout({ children, params }: Props) {
 
         {/* Action tags or buttons if any */}
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-secondary-container text-on-secondary-container">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block" />
-            {currentMembership.role}
-          </span>
           <Link
             href={`/org/${org.slug}/login`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center h-8 px-3 rounded-full text-xs font-semibold bg-primary text-on-primary hover:opacity-90 shadow-sm transition-all"
           >
-            Preview staff portal
+            Open Staff Portal
           </Link>
         </div>
       </div>

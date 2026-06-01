@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Monitor, Clock, Users, Lock, Loader2 } from "lucide-react"
+import { Monitor, Clock, Users, Lock, Loader2, QrCode } from "lucide-react"
 import { verifyKioskPasscodeAction } from "@/server/actions/ticket.action"
+import { QRCodeSVG } from "qrcode.react"
 
 interface Service {
   id: string
@@ -65,7 +66,9 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
   const [enteredPasscode, setEnteredPasscode] = useState("")
   const [isAuthLoading, setIsAuthLoading] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
+  const [scrollPosition, setScrollPosition] = useState(0)
   const lastCallEventId = useRef<string | null | undefined>(undefined)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const playCallSound = () => {
     type AudioWindow = Window & {
@@ -122,11 +125,22 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
 
     let active = true
     let eventSource: EventSource | null = null
+    let reconnectTimeout: NodeJS.Timeout | null = null
 
     function connectSSE() {
       if (!active) return
       
+      // Clear any pending reconnection
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout)
+        reconnectTimeout = null
+      }
+      
       eventSource = new EventSource(`/api/queue/${queue.id}/stream`)
+
+      eventSource.onopen = () => {
+        // Connection established successfully
+      }
 
       eventSource.onmessage = (event) => {
         if (!active) return
@@ -155,7 +169,8 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
       eventSource.onerror = () => {
         if (active) {
           eventSource?.close()
-          setTimeout(connectSSE, 3000)
+          // Exponential backoff: wait 3 seconds before reconnecting
+          reconnectTimeout = setTimeout(connectSSE, 3000)
         }
       }
     }
@@ -164,19 +179,14 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
 
     return () => {
       active = false
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout)
+      }
       if (eventSource) {
         eventSource.close()
       }
     }
   }, [queue.id, isAuthenticated])
-
-  // Update clock every second
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [])
 
   // Handle authentication
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -214,11 +224,35 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
     })
     .filter((item) => item.counter)
 
-  // Get waiting tickets
-  const waitingTickets = tickets
-    .filter((t) => t.status === "waiting")
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-    .slice(0, 10) // Show next 10 waiting
+  // Get waiting tickets - show next ticket for each service (max 8 total)
+  const waitingTickets = (() => {
+    const waiting = tickets.filter((t) => t.status === "waiting")
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    
+    // Group by service and get the first ticket for each service
+    const serviceMap = new Map<string, Ticket>()
+    const result: Ticket[] = []
+    
+    for (const ticket of waiting) {
+      if (!serviceMap.has(ticket.service.id)) {
+        serviceMap.set(ticket.service.id, ticket)
+        result.push(ticket)
+        if (result.length >= 8) break // Limit to 8 tickets
+      }
+    }
+    
+    // If we have less than 8, fill with remaining tickets
+    if (result.length < 8) {
+      for (const ticket of waiting) {
+        if (!result.includes(ticket)) {
+          result.push(ticket)
+          if (result.length >= 8) break
+        }
+      }
+    }
+    
+    return result
+  })()
 
   // Parse portal branding
   let branding: { primaryColor?: string; logoUrl?: string; welcomeMessage?: string } = {}
@@ -229,6 +263,49 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
   } catch (err) {
     console.error("Failed to parse portal branding:", err)
   }
+
+
+  // Update clock every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Auto-scroll waiting queue
+  useEffect(() => {
+    if (!isAuthenticated || waitingTickets.length <= 4) return
+
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const scrollHeight = container.scrollHeight
+    const clientHeight = container.clientHeight
+    const maxScroll = scrollHeight - clientHeight
+
+    if (maxScroll <= 0) return
+
+    const scrollInterval = setInterval(() => {
+      setScrollPosition((prev) => {
+        const next = prev + 1
+        if (next >= maxScroll) {
+          return 0 // Reset to top
+        }
+        return next
+      })
+    }, 50) // Smooth scroll speed
+
+    return () => clearInterval(scrollInterval)
+  }, [isAuthenticated, waitingTickets.length])
+
+  // Apply scroll position
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (container) {
+      container.scrollTop = scrollPosition
+    }
+  }, [scrollPosition])
 
   const primaryColor = branding.primaryColor || "#4a654e"
   const logoUrl = branding.logoUrl
@@ -395,9 +472,13 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
               </div>
             </div>
 
-            <div className="max-h-[calc(100vh-18rem)] min-h-0 overflow-hidden rounded-[1.25rem] border border-[#e3e2e0] bg-white p-4 shadow-[0_10px_40px_rgba(44,74,62,0.08)]">
+            <div className="flex-1 min-h-0 rounded-[1.25rem] border border-[#e3e2e0] bg-white p-4 shadow-[0_10px_40px_rgba(44,74,62,0.08)]">
               {waitingTickets.length > 0 ? (
-                <div className="h-full max-h-[calc(100vh-20rem)] space-y-2 overflow-y-auto pr-2">
+                <div 
+                  ref={scrollContainerRef}
+                  className="h-full space-y-2 overflow-y-auto pr-2 scroll-smooth [&::-webkit-scrollbar]:hidden"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
                   {waitingTickets.map((ticket, index) => (
                     <div
                       key={ticket.id}
@@ -407,7 +488,7 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
                         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[0.5rem] bg-[#cceace] text-xs font-black text-[#4a654e]">
                             {index + 1}
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="truncate font-mono text-[22px] font-black leading-none" style={{ color: primaryColor }}>
                             {ticket.code}
                           </div>
@@ -428,6 +509,27 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
                 </div>
               )}
             </div>
+
+            {/* QR Code Section */}
+            <div className="mt-4 flex-shrink-0 rounded-[1.25rem] border border-[#e3e2e0] bg-white p-6 shadow-[0_10px_40px_rgba(44,74,62,0.08)]">
+              <div className="text-center space-y-3">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <QrCode className="h-5 w-5 text-[#4a654e]" />
+                  <h3 className="text-base font-bold text-[#1a1c1a]">Where&apos;s my ticket?</h3>
+                </div>
+                <div className="flex justify-center">
+                  <div className="bg-white p-3 rounded-xl border-2 border-[#e3e2e0]">
+                    <QRCodeSVG
+                      value={`${window.location.origin}/live/${queue.id}/track`}
+                      size={140}
+                      level="M"
+                      fgColor={primaryColor}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-[#737972] font-medium">Scan to check status</p>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -439,6 +541,15 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
             <div className="h-2 w-2 rounded-full bg-[#4a654e] animate-pulse"></div>
             <span className="font-semibold">Live Updates Active</span>
           </div>
+          <a 
+            href={`/live/${queue.id}/track`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold hover:text-[#4a654e] transition-colors flex items-center gap-1.5"
+          >
+            <QrCode className="h-3.5 w-3.5" />
+            Where&apos;s my ticket?
+          </a>
           <div className="font-semibold">
             Powered by Hi-Queue
           </div>

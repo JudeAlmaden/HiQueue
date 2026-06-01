@@ -2,15 +2,14 @@ import * as serviceRepo from "@/server/repositories/service.repo"
 import { ok, fail, ActionResult } from "@/server/lib/action-utils"
 import { CreateServiceInput, UpdateServiceInput } from "@/server/validators/service.validator"
 import { db } from "@/server/lib/db"
+import {
+  canSetServiceActive,
+  getOrganizationRole,
+  hasOrganizationRole,
+} from "@/server/lib/permissions"
 
-/**
- * Check if user is owner or admin in the organization.
- */
-async function checkAdminOrOwner(userId: string, organizationId: string): Promise<boolean> {
-  const membership = await db.organizationMembership.findUnique({
-    where: { userId_organizationId: { userId, organizationId } },
-  })
-  return !!membership && (membership.role === "owner" || membership.role === "admin")
+async function checkOwner(userId: string, organizationId: string): Promise<boolean> {
+  return hasOrganizationRole(userId, organizationId, ["owner"])
 }
 
 /**
@@ -22,7 +21,7 @@ export async function createService(
   organizationId: string
 ): Promise<ActionResult<any>> {
   try {
-    const isAuthorized = await checkAdminOrOwner(userId, organizationId)
+    const isAuthorized = await checkOwner(userId, organizationId)
     if (!isAuthorized) {
       return fail("You don't have permission to perform this action")
     }
@@ -71,7 +70,7 @@ export async function updateService(
   organizationId: string
 ): Promise<ActionResult<any>> {
   try {
-    const isAuthorized = await checkAdminOrOwner(userId, organizationId)
+    const isAuthorized = await checkOwner(userId, organizationId)
     if (!isAuthorized) {
       return fail("You don't have permission to perform this action")
     }
@@ -115,6 +114,39 @@ export async function updateService(
 }
 
 /**
+ * Open or close a service for new tickets.
+ */
+export async function setServiceActive(
+  id: string,
+  isActive: boolean,
+  userId: string,
+  organizationId: string
+): Promise<ActionResult<any>> {
+  try {
+    const role = await getOrganizationRole(userId, organizationId)
+    const isAuthorized = canSetServiceActive(role, isActive)
+    if (!isAuthorized) {
+      return fail("You don't have permission to perform this action")
+    }
+
+    const service = await db.service.findUnique({
+      where: { id },
+      include: { queue: true },
+    })
+
+    if (!service || service.queue.organizationId !== organizationId) {
+      return fail("Service not found or does not belong to your organization")
+    }
+
+    const updated = await serviceRepo.updateService(id, { isActive })
+    return ok(updated)
+  } catch (error: any) {
+    console.error("Failed to update service status:", error)
+    return fail("Failed to update service status. Please try again")
+  }
+}
+
+/**
  * Delete a service.
  */
 export async function deleteService(
@@ -123,7 +155,7 @@ export async function deleteService(
   organizationId: string
 ): Promise<ActionResult<void>> {
   try {
-    const isAuthorized = await checkAdminOrOwner(userId, organizationId)
+    const isAuthorized = await checkOwner(userId, organizationId)
     if (!isAuthorized) {
       return fail("You don't have permission to perform this action")
     }

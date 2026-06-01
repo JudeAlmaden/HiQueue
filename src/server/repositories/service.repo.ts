@@ -39,6 +39,7 @@ export async function updateService(
     name?: string
     prefix?: string
     avgDurationMinutes?: number | null
+    isActive?: boolean
   }
 ) {
   return db.service.update({

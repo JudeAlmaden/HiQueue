@@ -21,6 +21,7 @@ interface Service {
   name: string
   prefix: string
   avgDurationMinutes: number | null
+  isActive: boolean
 }
 
 interface Props {
@@ -29,6 +30,7 @@ interface Props {
   queueDescription: string | null
   hasPasscode: boolean
   services: Service[]
+  initialQueueOpen: boolean
 }
 
 interface LatestCallEvent {
@@ -429,167 +431,116 @@ export function LiveKioskClient({
         )}
       </div>
 
-      {/* Main card & Now Serving */}
-      <div className="flex-grow flex items-center justify-center px-4 pb-8 w-full max-w-5xl mx-auto">
-        <div className="flex flex-col lg:flex-row items-stretch justify-center gap-6 w-full">
-          {/* Ticketing Form Card */}
-          <div className="flex-1 max-w-lg bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col justify-between">
-            <div>
-              <div className="h-1.5 bg-gradient-to-r from-primary to-secondary" />
+      {/* Main card */}
+      <div className="flex-grow flex items-center justify-center px-4 pb-8 w-full max-w-lg mx-auto">
+        {/* Ticketing Form Card */}
+        <div className="w-full bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="h-1.5 bg-gradient-to-r from-primary to-secondary" />
 
-              <div className="p-8 space-y-6">
-                {/* Title */}
-                <div className="text-center space-y-1.5">
-                  <h1 className="text-3xl font-extrabold text-primary tracking-tight">
-                    Get Your Ticket
-                  </h1>
-                  <p className="text-sm text-on-surface-variant leading-relaxed max-w-sm mx-auto">
-                    {queueDescription || `Welcome to ${queueName}. Let's make your experience hassle-free.`}
-                  </p>
-                </div>
+            <div className="p-8 space-y-6">
+              {/* Title */}
+              <div className="text-center space-y-1.5">
+                <h1 className="text-3xl font-extrabold text-primary tracking-tight">
+                  Get Your Ticket
+                </h1>
+                <p className="text-sm text-on-surface-variant leading-relaxed max-w-sm mx-auto">
+                  {queueDescription || `Welcome to ${queueName}. Let's make your experience hassle-free.`}
+                </p>
+              </div>
 
-                {/* Service Selector */}
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold text-on-surface-variant text-center tracking-wide">
-                    Choose where to queue:
-                  </p>
+              {/* Service Selector */}
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-on-surface-variant text-center tracking-wide">
+                  Choose where to queue:
+                </p>
 
-                  {services.length > 0 ? (
-                    <div className="flex flex-wrap gap-3 justify-center">
-                      {services.map((service) => (
+                {services.length > 0 ? (
+                  <div className="flex flex-wrap gap-3 justify-center">
+                    {services.map((service) => {
+                      const isClosed = !service.isActive
+                      return (
                         <button
                           key={service.id}
+                          disabled={isClosed}
                           onClick={() =>
                             setSelectedServiceId(
                               selectedServiceId === service.id ? null : service.id
                             )
                           }
                           className={`
-                            px-5 py-3 rounded-xl border-2 font-bold text-sm transition-all duration-200 min-w-[100px] cursor-pointer
+                            px-5 py-3 rounded-xl border-2 font-bold text-sm transition-all duration-200 min-w-[100px] flex items-center justify-center gap-1.5
                             ${
-                              selectedServiceId === service.id
-                                ? "border-primary bg-primary text-on-primary shadow-md scale-105"
-                                : "border-outline-variant bg-surface-container text-on-surface hover:border-primary/50 hover:bg-surface-low"
+                              isClosed
+                                ? "border-dashed border-red-200/50 bg-red-50/20 text-on-surface-variant/40 cursor-not-allowed opacity-60"
+                                : selectedServiceId === service.id
+                                  ? "border-primary bg-primary text-on-primary shadow-md scale-105 cursor-pointer"
+                                  : "border-outline-variant bg-surface-container text-on-surface hover:border-primary/50 hover:bg-surface-low cursor-pointer"
                             }
                           `}
                         >
-                          {service.name}
+                          {isClosed && <span className="h-1.5 w-1.5 rounded-full bg-red-400" />}
+                          <span>{service.name}</span>
+                          {isClosed && <span className="text-[10px] font-semibold text-red-500/80 ml-0.5">(Closed)</span>}
                         </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center border border-dashed border-outline-variant rounded-xl py-8">
-                      <Ticket className="h-8 w-8 mx-auto text-on-surface-variant/40 mb-2" />
-                      <p className="text-sm font-semibold text-on-surface/60">No services configured</p>
-                      <p className="text-xs text-on-surface-variant/50 mt-0.5">
-                        An admin needs to add services to this queue.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Selected service hint */}
-                {selectedService && (
-                  <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-2.5 text-xs text-primary font-medium flex items-center gap-2">
-                    <Clock className="h-3.5 w-3.5 shrink-0" />
-                    <span>
-                      <strong>{selectedService.name}</strong> — avg.{" "}
-                      {selectedService.avgDurationMinutes || 10} min per customer
-                    </span>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center border border-dashed border-outline-variant rounded-xl py-8">
+                    <Ticket className="h-8 w-8 mx-auto text-on-surface-variant/40 mb-2" />
+                    <p className="text-sm font-semibold text-on-surface/60">No services configured</p>
+                    <p className="text-xs text-on-surface-variant/50 mt-0.5">
+                      An admin needs to add services to this queue.
+                    </p>
                   </div>
                 )}
-
-                {/* Name Input */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-on-surface-variant">
-                    Name (Optional)
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="e.g. Maria Santos"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && selectedServiceId && !isSubmitting) handleGetTicket()
-                    }}
-                    className="h-11 rounded-xl border border-outline-variant bg-surface-container text-on-surface focus-visible:ring-2 focus-visible:ring-primary px-4 placeholder:text-on-surface-variant/40"
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                {/* Submit Button */}
-                <Button
-                  onClick={handleGetTicket}
-                  disabled={!selectedServiceId || isSubmitting}
-                  className="w-full h-12 rounded-full text-sm font-extrabold bg-primary text-on-primary hover:opacity-90 shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating Ticket...
-                    </>
-                  ) : (
-                    "Get My Ticket"
-                  )}
-                </Button>
               </div>
-            </div>
-          </div>
 
-          {/* Now Serving Panel */}
-          <div className="w-full lg:w-80 bg-white rounded-2xl shadow-lg border border-border flex flex-col overflow-hidden">
-            <div className="p-5 border-b border-border/50 bg-surface-low/50 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users className="h-4.5 w-4.5 text-primary opacity-85" />
-                <h2 className="text-sm font-black text-on-surface">Now Serving</h2>
-              </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
-                Live
-              </span>
-            </div>
-
-            <div className="p-5 flex-1 overflow-y-auto space-y-3.5 min-h-[300px]">
-              {servingTickets.length > 0 ? (
-                servingTickets.map((t) => (
-                  <div
-                    key={t.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-surface-low border border-border/50"
-                  >
-                    <div className="min-w-0 flex-1 pr-2">
-                      <span className="text-[10px] font-bold text-on-surface-variant/70 block truncate">
-                        {t.counter?.name || "Counter"}
-                      </span>
-                      <span className="text-xs font-semibold text-on-surface mt-0.5 block truncate">
-                        {(() => {
-                          try {
-                            const customer = JSON.parse(t.customer)
-                            return customer.name || "Customer"
-                          } catch {
-                            return "Customer"
-                          }
-                        })()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="font-mono text-sm font-extrabold text-primary bg-primary/10 px-2.5 py-1 rounded-xl">
-                        {t.code}
-                      </span>
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center text-center py-12 text-on-surface-variant/40 space-y-2 h-full">
-                  <Clock className="h-8 w-8 opacity-45 animate-pulse" />
-                  <p className="text-xs font-semibold">No active service</p>
-                  <p className="text-[10px] leading-relaxed max-w-[180px]">
-                    Tickets currently being called at counters will show up here.
-                  </p>
+              {/* Selected service hint */}
+              {selectedService && (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-2.5 text-xs text-primary font-medium flex items-center gap-2">
+                  <Clock className="h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    <strong>{selectedService.name}</strong> — avg.{" "}
+                    {selectedService.avgDurationMinutes || 10} min per customer
+                  </span>
                 </div>
               )}
+
+              {/* Name Input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-on-surface-variant">
+                  Name (Optional)
+                </label>
+                <Input
+                  type="text"
+                  placeholder="e.g. Maria Santos"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && selectedServiceId && !isSubmitting) handleGetTicket()
+                  }}
+                  className="h-11 rounded-xl border border-outline-variant bg-surface-container text-on-surface focus-visible:ring-2 focus-visible:ring-primary px-4 placeholder:text-on-surface-variant/40"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              {/* Submit Button */}
+              <Button
+                onClick={handleGetTicket}
+                disabled={!selectedServiceId || isSubmitting}
+                className="w-full h-12 rounded-full text-sm font-extrabold bg-primary text-on-primary hover:opacity-90 shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating Ticket...
+                  </>
+                ) : (
+                  "Get My Ticket"
+                )}
+              </Button>
             </div>
           </div>
         </div>

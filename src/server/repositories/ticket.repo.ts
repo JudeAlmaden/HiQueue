@@ -83,18 +83,33 @@ export async function createTicket(data: {
       })
     }
 
-    // 4. Calculate next number and increment session
-    const nextNumber = session.currentNumber + 1
-
-    await tx.queueSession.update({
-      where: { id: session.id },
-      data: { currentNumber: nextNumber },
+    // 4. Calculate next number for this specific prefix
+    // Find the highest number for this prefix in the current session
+    const lastTicketWithPrefix = await tx.ticket.findFirst({
+      where: {
+        queueSessionId: session.id,
+        serviceId: data.serviceId,
+      },
+      orderBy: {
+        number: "desc",
+      },
+      select: {
+        number: true,
+      },
     })
 
-    // 5. Generate code (e.g. A001)
+    const nextNumber = lastTicketWithPrefix ? lastTicketWithPrefix.number + 1 : 1
+
+    // 5. Update session's global counter (for display purposes)
+    await tx.queueSession.update({
+      where: { id: session.id },
+      data: { currentNumber: { increment: 1 } },
+    })
+
+    // 6. Generate code (e.g. A001, B001, A002)
     const code = `${service.prefix}${String(nextNumber).padStart(3, "0")}`
 
-    // 6. Create ticket
+    // 7. Create ticket
     return tx.ticket.create({
       data: {
         organizationId: queue.organizationId,
@@ -208,6 +223,9 @@ export async function callTicket(ticketId: string, counterId: string) {
       where: { id: ticketId },
     })
     if (!ticket) throw new Error("Ticket not found")
+    if (ticket.queueId !== counter.queueId) {
+      throw new Error("Ticket does not belong to this counter's queue")
+    }
     if (ticket.status !== "waiting" && ticket.status !== "hold") {
       throw new Error("Ticket is not in waiting or hold status")
     }
@@ -290,6 +308,9 @@ export async function completeTicket(ticketId: string, counterId: string) {
       where: { id: ticketId },
     })
     if (!ticket) throw new Error("Ticket not found")
+    if (ticket.queueId !== counter.queueId) {
+      throw new Error("Ticket does not belong to this counter's queue")
+    }
     if (ticket.status !== "serving") {
       throw new Error("Ticket is not currently being served")
     }
@@ -340,6 +361,9 @@ export async function holdTicket(ticketId: string, counterId: string) {
       where: { id: ticketId },
     })
     if (!ticket) throw new Error("Ticket not found")
+    if (ticket.queueId !== counter.queueId) {
+      throw new Error("Ticket does not belong to this counter's queue")
+    }
     if (ticket.status !== "serving") {
       throw new Error("Ticket is not currently being served")
     }
@@ -398,6 +422,9 @@ export async function recallFromHold(ticketId: string, counterId: string) {
       where: { id: ticketId },
     })
     if (!ticket) throw new Error("Ticket not found")
+    if (ticket.queueId !== counter.queueId) {
+      throw new Error("Ticket does not belong to this counter's queue")
+    }
     if (ticket.status !== "hold") {
       throw new Error("Ticket is not on hold")
     }
@@ -478,6 +505,9 @@ export async function noShowTicket(ticketId: string, counterId: string) {
       where: { id: ticketId },
     })
     if (!ticket) throw new Error("Ticket not found")
+    if (ticket.queueId !== counter.queueId) {
+      throw new Error("Ticket does not belong to this counter's queue")
+    }
     if (ticket.status !== "serving") {
       throw new Error("Ticket is not currently being served")
     }
@@ -527,6 +557,9 @@ export async function skipTicket(ticketId: string, counterId: string) {
       where: { id: ticketId },
     })
     if (!ticket) throw new Error("Ticket not found")
+    if (ticket.queueId !== counter.queueId) {
+      throw new Error("Ticket does not belong to this counter's queue")
+    }
 
     // Update ticket
     const updatedTicket = await tx.ticket.update({

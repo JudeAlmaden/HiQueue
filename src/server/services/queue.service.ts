@@ -2,15 +2,19 @@ import * as queueRepo from "@/server/repositories/queue.repo"
 import { ok, fail, ActionResult } from "@/server/lib/action-utils"
 import { CreateQueueInput, UpdateQueueInput } from "@/server/validators/queue.validator"
 import { db } from "@/server/lib/db"
+import { hasOrganizationRole } from "@/server/lib/permissions"
 
-/**
- * Check if user is owner or admin in the organization.
- */
-async function checkAdminOrOwner(userId: string, organizationId: string): Promise<boolean> {
-  const membership = await db.organizationMembership.findUnique({
-    where: { userId_organizationId: { userId, organizationId } },
+async function checkOwner(userId: string, organizationId: string): Promise<boolean> {
+  return hasOrganizationRole(userId, organizationId, ["owner"])
+}
+
+async function verifyQueueInOrganization(id: string, organizationId: string): Promise<boolean> {
+  const queue = await db.queue.findUnique({
+    where: { id },
+    select: { organizationId: true },
   })
-  return !!membership && (membership.role === "owner" || membership.role === "admin")
+
+  return queue?.organizationId === organizationId
 }
 
 /**
@@ -21,7 +25,7 @@ export async function createQueue(
   userId: string
 ): Promise<ActionResult<any>> {
   try {
-    const isAuthorized = await checkAdminOrOwner(userId, input.organizationId)
+    const isAuthorized = await checkOwner(userId, input.organizationId)
     if (!isAuthorized) {
       return fail("You don't have permission to perform this action")
     }
@@ -55,9 +59,14 @@ export async function updateQueue(
   organizationId: string
 ): Promise<ActionResult<any>> {
   try {
-    const isAuthorized = await checkAdminOrOwner(userId, organizationId)
+    const isAuthorized = await checkOwner(userId, organizationId)
     if (!isAuthorized) {
       return fail("You don't have permission to perform this action")
+    }
+
+    const queueBelongsToOrganization = await verifyQueueInOrganization(input.id, organizationId)
+    if (!queueBelongsToOrganization) {
+      return fail("Queue not found or does not belong to your organization")
     }
 
     // Check duplicate name in organization if name is provided
@@ -84,6 +93,34 @@ export async function updateQueue(
 }
 
 /**
+ * Open or close a queue for new tickets.
+ */
+export async function setQueueActive(
+  id: string,
+  isActive: boolean,
+  userId: string,
+  organizationId: string
+): Promise<ActionResult<any>> {
+  try {
+    const isAuthorized = await checkOwner(userId, organizationId)
+    if (!isAuthorized) {
+      return fail("You don't have permission to perform this action")
+    }
+
+    const queue = await db.queue.findUnique({ where: { id } })
+    if (!queue || queue.organizationId !== organizationId) {
+      return fail("Queue not found or does not belong to your organization")
+    }
+
+    const updated = await queueRepo.updateQueue(id, { isActive })
+    return ok(updated)
+  } catch (error: any) {
+    console.error("Failed to update queue status:", error)
+    return fail("Failed to update queue status. Please try again")
+  }
+}
+
+/**
  * Delete a queue.
  */
 export async function deleteQueue(
@@ -92,9 +129,14 @@ export async function deleteQueue(
   organizationId: string
 ): Promise<ActionResult<void>> {
   try {
-    const isAuthorized = await checkAdminOrOwner(userId, organizationId)
+    const isAuthorized = await checkOwner(userId, organizationId)
     if (!isAuthorized) {
       return fail("You don't have permission to perform this action")
+    }
+
+    const queueBelongsToOrganization = await verifyQueueInOrganization(id, organizationId)
+    if (!queueBelongsToOrganization) {
+      return fail("Queue not found or does not belong to your organization")
     }
 
     // Check for active tickets

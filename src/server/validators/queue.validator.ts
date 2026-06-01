@@ -12,14 +12,22 @@ export const updateQueueSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters").optional(),
   description: z.string().max(500, "Description must be less than 500 characters").nullable().optional().or(z.literal("")),
   passcode: z.string().min(4, "Passcode must be at least 4 characters").max(20, "Passcode must be less than 20 characters").nullable().optional().or(z.literal("")),
-  theme: z.record(z.any()).optional(),
-  layout: z.record(z.any()).optional(),
+  theme: z.record(z.string(), z.any()).optional(),
+  layout: z.record(z.string(), z.any()).optional(),
 })
 
 export const deleteQueueSchema = z.object({
   id: z.string().min(1, "Queue ID is required"),
 })
 
+export const setQueueActiveSchema = z.object({
+  id: z.string().min(1, "Queue ID is required"),
+  isActive: z.boolean(),
+  organizationId: z.string().min(1, "Organization ID is required"),
+  orgSlug: z.string().min(1, "Organization slug is required").optional(),
+})
+
 export type CreateQueueInput = z.infer<typeof createQueueSchema>
 export type UpdateQueueInput = z.infer<typeof updateQueueSchema>
 export type DeleteQueueInput = z.infer<typeof deleteQueueSchema>
+export type SetQueueActiveInput = z.infer<typeof setQueueActiveSchema>

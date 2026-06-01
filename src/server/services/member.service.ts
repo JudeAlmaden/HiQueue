@@ -4,13 +4,13 @@ import { CreateMemberInput, UpdateMemberInput, DeleteMemberInput } from "@/serve
 import { db } from "@/server/lib/db"
 
 /**
- * Member service — handles business logic for member management.
+ * Member service - handles business logic for member management.
  * Validates permissions and enforces business rules before calling repository.
  */
 
 /**
  * Create a new member in an organization.
- * Validates that the user has owner or admin role.
+ * Validates that the user has owner role.
  * Checks for duplicate email in the organization.
  * @param input - Member creation data
  * @param userId - ID of the user creating the member
@@ -21,7 +21,6 @@ export async function createMember(
   userId: string
 ): Promise<ActionResult<{ id: string; name: string; email: string | null }>> {
   try {
-    // Verify the user has owner or admin role
     const membership = await db.organizationMembership.findUnique({
       where: { userId_organizationId: { userId, organizationId: input.organizationId } },
     })
@@ -30,8 +29,8 @@ export async function createMember(
       return fail("You are not a member of this organization")
     }
 
-    if (membership.role !== "owner" && membership.role !== "admin") {
-      return fail("You don't have permission to perform this action")
+    if (membership.role !== "owner") {
+      return fail("Only organization owners have permission to add members or assign roles.")
     }
 
     // Check for duplicate email in organization
@@ -66,7 +65,7 @@ export async function createMember(
 
 /**
  * Update a member's information.
- * Validates that the user has owner or admin role.
+ * Validates that the user has owner role.
  * Can update user data (name, email) and/or role.
  * @param input - Member update data
  * @param userId - ID of the user performing the update
@@ -79,7 +78,6 @@ export async function updateMember(
   organizationId: string
 ): Promise<ActionResult<void>> {
   try {
-    // Verify the user has owner or admin role
     const membership = await db.organizationMembership.findUnique({
       where: { userId_organizationId: { userId, organizationId } },
     })
@@ -88,8 +86,20 @@ export async function updateMember(
       return fail("You are not a member of this organization")
     }
 
-    if (membership.role !== "owner" && membership.role !== "admin") {
-      return fail("You don't have permission to perform this action")
+    if (membership.role !== "owner") {
+      return fail("Only organization owners have permission to edit members or modify roles.")
+    }
+
+    const targetMembership = await db.organizationMembership.findUnique({
+      where: { userId_organizationId: { userId: input.id, organizationId } },
+    })
+
+    if (!targetMembership) {
+      return fail("Member not found or does not belong to this organization")
+    }
+
+    if (targetMembership.role === "owner" && input.role !== undefined) {
+      return fail("Organization owner roles cannot be changed from member management.")
     }
 
     // Check if email is being updated and if it's a duplicate
@@ -122,8 +132,7 @@ export async function updateMember(
 
 /**
  * Delete a member from an organization.
- * Validates that the user has owner or admin role.
- * Prevents admins from removing owners.
+ * Validates that the user has owner role.
  * @param input - Member deletion data
  * @param userId - ID of the user performing the deletion
  * @returns ActionResult with success or error message
@@ -133,7 +142,6 @@ export async function deleteMember(
   userId: string
 ): Promise<ActionResult<void>> {
   try {
-    // Verify the user has owner or admin role
     const membership = await db.organizationMembership.findUnique({
       where: { userId_organizationId: { userId, organizationId: input.organizationId } },
     })
@@ -142,22 +150,29 @@ export async function deleteMember(
       return fail("You are not a member of this organization")
     }
 
-    if (membership.role !== "owner" && membership.role !== "admin") {
-      return fail("You don't have permission to perform this action")
+    if (membership.role !== "owner") {
+      return fail("Only organization owners have permission to remove members.")
     }
 
-    // Get the target member's role
+    if (input.id === userId) {
+      return fail("Organization owners cannot remove themselves from member management.")
+    }
+
     const targetMembership = await db.organizationMembership.findUnique({
-      where: { userId_organizationId: { userId: input.id, organizationId: input.organizationId } },
+      where: {
+        userId_organizationId: {
+          userId: input.id,
+          organizationId: input.organizationId,
+        },
+      },
     })
 
     if (!targetMembership) {
-      return fail("Member not found in this organization")
+      return fail("Member not found or does not belong to this organization")
     }
 
-    // Prevent admins from removing owners
-    if (membership.role === "admin" && targetMembership.role === "owner") {
-      return fail("Admins cannot remove organization owners")
+    if (targetMembership.role === "owner") {
+      return fail("Organization owners cannot be removed from member management.")
     }
 
     // Delete the member

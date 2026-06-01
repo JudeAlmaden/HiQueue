@@ -47,7 +47,19 @@ export async function createTicketAction(input: {
       return fail("Queue not found")
     }
 
+    if (!queue.isActive) {
+      return fail("This queue is currently closed")
+    }
+
     // Passcode is verified client-side via verifyKioskPasscodeAction before ticket creation
+    const service = queue.services.find((s) => s.id === result.data.serviceId)
+    if (!service) {
+      return fail("Service not found")
+    }
+
+    if (!service.isActive) {
+      return fail("This service is currently closed")
+    }
 
     const ticket = await ticketRepo.createTicket({
       queueId: result.data.queueId,
@@ -59,7 +71,6 @@ export async function createTicketAction(input: {
     const waitCount = await ticketRepo.getWaitingTicketsCount(result.data.queueId, ticket.id)
 
     // Estimate wait time (avgDurationMinutes for the service * waitCount)
-    const service = queue.services.find((s) => s.id === result.data.serviceId)
     const avgDuration = service?.avgDurationMinutes || 10
     const estimatedWaitTime = waitCount * avgDuration
 

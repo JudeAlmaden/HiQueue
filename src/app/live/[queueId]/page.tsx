@@ -38,6 +38,7 @@ export default async function LiveKioskPage({ params }: Props) {
     name: s.name,
     prefix: s.prefix,
     avgDurationMinutes: s.avgDurationMinutes,
+    isActive: s.isActive,
   }))
 
   return (
@@ -47,6 +48,7 @@ export default async function LiveKioskPage({ params }: Props) {
       queueDescription={queue.description}
       hasPasscode={!!(queue.passcode && queue.passcode.trim().length > 0)}
       services={services}
+      initialQueueOpen={queue.isActive}
     />
   )
 }

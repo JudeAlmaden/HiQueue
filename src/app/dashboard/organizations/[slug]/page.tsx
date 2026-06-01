@@ -131,7 +131,7 @@ export default async function OrgDetailPage({
               >
                 <span className="inline-flex items-center gap-2">
                   <UserPlus className="h-4 w-4" />
-                  Invite members
+                  Manage Staff
                 </span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
@@ -156,7 +156,7 @@ export default async function OrgDetailPage({
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-on-surface">Queue readiness</h2>
+              <h2 className="text-base font-semibold text-on-surface">Queues</h2>
               <p className="text-sm text-on-surface-variant">Counters and access points for each queue.</p>
             </div>
             <Link
@@ -266,24 +266,6 @@ export default async function OrgDetailPage({
                   </div>
                 )
               })}
-            </div>
-          </section>
-
-          <section className="rounded-xl bg-surface-low p-4 ring-1 ring-primary/10">
-            <h2 className="text-base font-semibold text-on-surface">Setup pulse</h2>
-            <div className="mt-4 space-y-3">
-              {setupItems.map((item) => (
-                <div key={item.label} className="flex items-center gap-3">
-                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                    item.complete
-                      ? "bg-primary/10 text-primary"
-                      : "bg-surface-container text-on-surface-variant"
-                  }`}>
-                    {item.complete ? <CheckCircle2 className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
-                  </div>
-                  <p className="text-sm font-medium text-on-surface">{item.label}</p>
-                </div>
-              ))}
             </div>
           </section>
         </div>

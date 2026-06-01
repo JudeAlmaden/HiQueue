@@ -1,6 +1,11 @@
 "use server"
 
-import { createServiceSchema, updateServiceSchema, deleteServiceSchema } from "@/server/validators/service.validator"
+import {
+  createServiceSchema,
+  updateServiceSchema,
+  deleteServiceSchema,
+  setServiceActiveSchema,
+} from "@/server/validators/service.validator"
 import * as serviceService from "@/server/services/service.service"
 import { fail } from "@/server/lib/action-utils"
 import { auth } from "@/auth"
@@ -93,6 +98,39 @@ export async function deleteServiceAction(input: {
 
   if (res.success && input.orgSlug) {
     revalidatePath(`/dashboard/organizations/${input.orgSlug}/queues/${input.queueId}`)
+  }
+
+  return res
+}
+
+export async function setServiceActiveAction(input: {
+  id: string
+  isActive: boolean
+  organizationId: string
+  orgSlug: string
+  queueId: string
+}) {
+  const session = await auth()
+  const userId = session?.user?.id
+
+  if (!userId) return fail("Unauthorized")
+
+  const result = setServiceActiveSchema.safeParse(input)
+
+  if (!result.success) {
+    return fail(result.error.issues[0].message)
+  }
+
+  const res = await serviceService.setServiceActive(
+    result.data.id,
+    result.data.isActive,
+    userId,
+    result.data.organizationId
+  )
+
+  if (res.success) {
+    revalidatePath(`/dashboard/organizations/${result.data.orgSlug}/queues/${result.data.queueId}`)
+    revalidatePath(`/live/${result.data.queueId}`)
   }
 
   return res

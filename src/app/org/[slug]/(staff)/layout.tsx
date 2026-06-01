@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+import { auth, signOut } from "@/auth"
 import { notFound, redirect } from "next/navigation"
 import { PortalHeader } from "@/components/portal/PortalHeader"
 import { getOrgPortalBySlug, verifyOrgMembership } from "@/server/repositories/portal.repo"
@@ -28,7 +28,16 @@ export default async function OrgStaffPortalLayout({ children, params }: Props) 
 
   return (
     <>
-      <PortalHeader org={org} />
+      <PortalHeader
+        org={org}
+        role={membership.role}
+        userName={session?.user?.name}
+        userEmail={session?.user?.email}
+        signOutAction={async () => {
+          "use server"
+          await signOut({ redirectTo: `/org/${slug}/login` })
+        }}
+      />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">{children}</main>
     </>
   )

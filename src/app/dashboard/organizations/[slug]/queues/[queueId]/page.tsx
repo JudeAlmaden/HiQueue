@@ -35,6 +35,12 @@ export default async function OrgQueueDetailPage({ params }: Props) {
       currentUserRole={currentMembership.role}
       organizationId={org.id}
       orgSlug={org.slug}
+      organizationMembers={org.memberships.map(m => ({
+        id: m.user.id,
+        name: m.user.name,
+        email: m.user.email,
+        role: m.role,
+      }))}
     />
   )
 }
