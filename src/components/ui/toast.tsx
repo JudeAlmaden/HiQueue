@@ -7,15 +7,15 @@ type ToastType = "success" | "error"
 
 interface Toast {
   id: string
-  message: string
+  message: React.ReactNode
   type: ToastType
   duration?: number
 }
 
 interface ToastContextType {
-  toast: (message: string, type?: ToastType, duration?: number) => void
-  success: (message: string, duration?: number) => void
-  error: (message: string, duration?: number) => void
+  toast: (message: React.ReactNode, type?: ToastType, duration?: number) => void
+  success: (message: React.ReactNode, duration?: number) => void
+  error: (message: React.ReactNode, duration?: number) => void
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined)
@@ -30,12 +30,72 @@ export function useToast() {
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
+  const [activeTheme, setActiveTheme] = useState<{
+    className: string
+    style: React.CSSProperties
+  }>({ className: "", style: {} })
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const updateThemeFromDOM = () => {
+      const portalEl = document.querySelector("[data-portal-org]")
+      if (portalEl) {
+        // Extract theme classes starting with theme- or equal to dark
+        const classes = Array.from(portalEl.classList).filter(
+          (cls) => cls.startsWith("theme-") || cls === "dark"
+        )
+        
+        // Extract CSS variables starting with -- from style attribute
+        const styleObj: Record<string, string> = {}
+        const styleAttr = portalEl.getAttribute("style")
+        if (styleAttr) {
+          styleAttr.split(";").forEach((pair) => {
+            const index = pair.indexOf(":")
+            if (index > 0) {
+              const key = pair.substring(0, index).trim()
+              const value = pair.substring(index + 1).trim()
+              if (key.startsWith("--")) {
+                styleObj[key] = value
+              }
+            }
+          })
+        }
+
+        setActiveTheme({
+          className: classes.join(" "),
+          style: styleObj,
+        })
+      } else {
+        setActiveTheme({ className: "", style: {} })
+      }
+    }
+
+    // Run initially to capture mounted state
+    updateThemeFromDOM()
+
+    // Observe updates to class and style in the body subtree
+    const observer = new MutationObserver(() => {
+      updateThemeFromDOM()
+    })
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "style"],
+    })
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
-  const toast = useCallback((message: string, type: ToastType = "success", duration?: number) => {
+  const toast = useCallback((message: React.ReactNode, type: ToastType = "success", duration?: number) => {
     const id = Math.random().toString(36).substring(2, 9)
     const defaultDuration = type === "success" ? 5000 : 10000
     const finalDuration = duration ?? defaultDuration
@@ -47,11 +107,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     }, finalDuration)
   }, [removeToast])
 
-  const success = useCallback((message: string, duration?: number) => {
+  const success = useCallback((message: React.ReactNode, duration?: number) => {
     toast(message, "success", duration)
   }, [toast])
 
-  const error = useCallback((message: string, duration?: number) => {
+  const error = useCallback((message: React.ReactNode, duration?: number) => {
     toast(message, "error", duration)
   }, [toast])
 
@@ -59,7 +119,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ toast, success, error }}>
       {children}
       {/* Toast Container */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-3 w-full max-w-sm pointer-events-none">
+      <div 
+        className={`fixed bottom-4 right-4 z-50 flex flex-col gap-3 w-full max-w-sm pointer-events-none transition-all duration-200 ${activeTheme.className}`}
+        style={{
+          ...activeTheme.style,
+        }}
+      >
         {toasts.map((t) => (
           <div
             key={t.id}
@@ -81,7 +146,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               <p className="text-sm font-semibold leading-tight mb-0.5">
                 {t.type === "success" ? "Success" : "Error"}
               </p>
-              <p className="text-xs opacity-90 leading-normal">{t.message}</p>
+              <div className="text-xs opacity-90 leading-normal">{t.message}</div>
             </div>
             <button
               onClick={() => removeToast(t.id)}

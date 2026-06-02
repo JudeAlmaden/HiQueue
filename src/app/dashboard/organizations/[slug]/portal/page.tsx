@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { getUserOrganization } from "@/server/services/organization.service"
 import { getOrgPortalBySlug } from "@/server/repositories/portal.repo"
+import { getOrganizationQueues } from "@/server/repositories/queue.repo"
 import { notFound, redirect } from "next/navigation"
 import { PortalCustomizer } from "@/components/portal/PortalCustomizer"
 import type { Metadata } from "next"
@@ -30,6 +31,8 @@ export default async function PortalCustomizationPage({
   // Get portal context
   const orgPortal = await getOrgPortalBySlug(slug)
   if (!orgPortal) notFound()
+  const queues = await getOrganizationQueues(orgPortal.id)
+  const sampleQueueId = queues[0]?.id
 
   return (
     <div className="space-y-6">
@@ -38,11 +41,11 @@ export default async function PortalCustomizationPage({
           Staff Portal Customization
         </h2>
         <p className="mt-2 text-sm text-on-surface-variant">
-          Customize your staff portal's theme, branding, and appearance to match your organization's identity.
+          Customize your staff portal theme, branding, and appearance to match your organization identity.
         </p>
       </div>
 
-      <PortalCustomizer orgPortal={orgPortal} />
+      <PortalCustomizer orgPortal={orgPortal} sampleQueueId={sampleQueueId} />
     </div>
   )
 }

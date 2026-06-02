@@ -13,6 +13,7 @@ export default async function OrgPortalRootLayout({ children, params }: Props) {
   if (!org) notFound()
 
   const themeClass = org.theme.themeClass ?? ""
+  const modeClass = themeClass !== "theme-custom" && org.theme.mode === "dark" ? "dark" : ""
   // Only apply custom CSS variables if they exist AND we're using theme-custom
   const shouldApplyCustomVars = themeClass === "theme-custom" && org.theme.cssVars
   const themeStyle = shouldApplyCustomVars ? org.theme.cssVars : {}
@@ -21,7 +22,7 @@ export default async function OrgPortalRootLayout({ children, params }: Props) {
     <div
       data-portal-org={org.slug}
       data-portal-org-id={org.id}
-      className={`min-h-screen bg-background text-foreground transition-colors duration-200 ${themeClass}`}
+      className={`min-h-screen bg-background text-foreground transition-colors duration-200 ${themeClass} ${modeClass}`}
       style={themeStyle}
     >
       {children}

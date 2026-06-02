@@ -1,13 +1,16 @@
 import { getQueueById } from "@/server/repositories/queue.repo"
 import { notFound } from "next/navigation"
 import { LiveKioskClient } from "./LiveKioskClient"
+import { mergePortalTheme, parsePortalBranding, parsePortalTheme, parsePreviewThemeParam } from "@/lib/portal-theme"
 
 interface Props {
   params: Promise<{ queueId: string }>
+  searchParams: Promise<{ previewTheme?: string }>
 }
 
-export default async function LiveKioskPage({ params }: Props) {
+export default async function LiveKioskPage({ params, searchParams }: Props) {
   const { queueId } = await params
+  const { previewTheme } = await searchParams
   const queue = await getQueueById(queueId)
 
   if (!queue) {
@@ -40,15 +43,32 @@ export default async function LiveKioskPage({ params }: Props) {
     avgDurationMinutes: s.avgDurationMinutes,
     isActive: s.isActive,
   }))
+  const portalTheme = parsePortalTheme(queue.organization.portalTheme ?? "{}")
+  const portalBranding = parsePortalBranding(queue.organization.portalBranding ?? "{}")
+  const preview = parsePreviewThemeParam(previewTheme)
+  const effectiveTheme = preview ? mergePortalTheme(portalTheme, preview) : portalTheme
+  const themeClass = effectiveTheme.themeClass ?? ""
+  const modeClass = themeClass !== "theme-custom" && effectiveTheme.mode === "dark" ? "dark" : ""
+  const shouldApplyCustomVars = themeClass === "theme-custom" && effectiveTheme.cssVars
+  const themeStyle = shouldApplyCustomVars ? effectiveTheme.cssVars : {}
 
   return (
-    <LiveKioskClient
-      queueId={queue.id}
-      queueName={queue.name}
-      queueDescription={queue.description}
-      hasPasscode={!!(queue.passcode && queue.passcode.trim().length > 0)}
-      services={services}
-      initialQueueOpen={queue.isActive}
-    />
+    <div
+      data-portal-org={queue.organization.slug}
+      data-portal-org-id={queue.organization.id}
+      className={`min-h-screen bg-background text-foreground transition-colors duration-200 ${themeClass} ${modeClass}`}
+      style={themeStyle}
+    >
+      <LiveKioskClient
+        queueId={queue.id}
+        queueName={queue.name}
+        queueDescription={queue.description}
+        hasPasscode={!!(queue.passcode && queue.passcode.trim().length > 0)}
+        services={services}
+        initialQueueOpen={queue.isActive}
+        portalTheme={effectiveTheme}
+        logoUrl={portalBranding.logoUrl ?? null}
+      />
+    </div>
   )
 }

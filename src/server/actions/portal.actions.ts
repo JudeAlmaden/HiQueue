@@ -25,7 +25,7 @@ export async function updatePortalTheme(
 
     // Verify user is a member of the organization and has permission
     const membership = await db.organizationMembership.findUnique({
-      where: { userId },
+      where: { userId_organizationId: { userId, organizationId } },
       select: { organizationId: true, role: true },
     })
 
@@ -33,14 +33,51 @@ export async function updatePortalTheme(
       return { success: false, error: "Not authorized to modify this organization" }
     }
 
-    // Only owners and admins can modify portal settings
-    if (membership.role !== "owner" && membership.role !== "admin") {
-      return { success: false, error: "Insufficient permissions. Only owners and admins can customize the portal." }
+    // Only owners can modify portal settings
+    if (membership.role !== "owner") {
+      return { success: false, error: "Insufficient permissions. Only the owner can customize the portal." }
     }
 
     // Validate and sanitize theme data
     const sanitizedTheme: PortalTheme = {
       themeClass: theme.themeClass ? String(theme.themeClass) : undefined,
+      mode: theme.mode === "dark" ? "dark" : theme.mode === "light" ? "light" : undefined,
+      layout:
+        theme.layout && typeof theme.layout === "object"
+          ? {
+              login:
+                theme.layout.login === "split" || theme.layout.login === "minimal"
+                  ? theme.layout.login
+                  : theme.layout.login === "centered"
+                    ? "centered"
+                    : undefined,
+              ticketing:
+                theme.layout.ticketing === "split-services"
+                  ? theme.layout.ticketing
+                  : theme.layout.ticketing === "card"
+                    ? "card"
+                    : undefined,
+              liveDisplay:
+                theme.layout.liveDisplay === "no-waiting"
+                  ? "no-waiting"
+                  : theme.layout.liveDisplay === "standard"
+                    ? "standard"
+                    : undefined,
+              track:
+                theme.layout.track === "centered"
+                  ? "centered"
+                  : undefined,
+            }
+          : undefined,
+      layoutControls:
+        theme.layoutControls && typeof theme.layoutControls === "object"
+          ? {
+              login: sanitizeLayoutControl(theme.layoutControls.login, true),
+              ticketing: sanitizeLayoutControl(theme.layoutControls.ticketing, false),
+              liveDisplay: sanitizeLayoutControl(theme.layoutControls.liveDisplay, false),
+              track: sanitizeLayoutControl(theme.layoutControls.track, false),
+            }
+          : undefined,
       cssVars: theme.cssVars && typeof theme.cssVars === "object" 
         ? theme.cssVars 
         : undefined,
@@ -61,6 +98,39 @@ export async function updatePortalTheme(
   }
 }
 
+function sanitizeLayoutControl(
+  value: unknown,
+  allowSplitRightPanelBg: boolean
+): {
+  splitRightPanelBg?: string
+  pageBg?: string
+  typographyScale?: number
+  fontColor?: string
+  sharpness?: number
+} | undefined {
+  if (!value || typeof value !== "object") return undefined
+  const obj = value as Record<string, unknown>
+
+  const result = {
+    splitRightPanelBg:
+      allowSplitRightPanelBg && typeof obj.splitRightPanelBg === "string"
+        ? String(obj.splitRightPanelBg)
+        : undefined,
+    pageBg: typeof obj.pageBg === "string" ? String(obj.pageBg) : undefined,
+    typographyScale:
+      typeof obj.typographyScale === "number"
+        ? Math.min(1.25, Math.max(0.85, obj.typographyScale))
+        : undefined,
+    fontColor: typeof obj.fontColor === "string" ? String(obj.fontColor) : undefined,
+    sharpness:
+      typeof obj.sharpness === "number"
+        ? Math.min(24, Math.max(0, obj.sharpness))
+        : undefined,
+  }
+
+  return result
+}
+
 /**
  * Update the portal branding for an organization
  */
@@ -78,7 +148,7 @@ export async function updatePortalBranding(
 
     // Verify user is a member of the organization and has permission
     const membership = await db.organizationMembership.findUnique({
-      where: { userId },
+      where: { userId_organizationId: { userId, organizationId } },
       select: { organizationId: true, role: true },
     })
 
@@ -86,9 +156,9 @@ export async function updatePortalBranding(
       return { success: false, error: "Not authorized to modify this organization" }
     }
 
-    // Only owners and admins can modify portal settings
-    if (membership.role !== "owner" && membership.role !== "admin") {
-      return { success: false, error: "Insufficient permissions. Only owners and admins can customize the portal." }
+    // Only owners can modify portal settings
+    if (membership.role !== "owner") {
+      return { success: false, error: "Insufficient permissions. Only the owner can customize the portal." }
     }
 
     // Validate and sanitize branding data
@@ -129,7 +199,7 @@ export async function resetPortalCustomization(
 
     // Verify user is a member of the organization and has permission
     const membership = await db.organizationMembership.findUnique({
-      where: { userId },
+      where: { userId_organizationId: { userId, organizationId } },
       select: { organizationId: true, role: true },
     })
 
@@ -137,9 +207,9 @@ export async function resetPortalCustomization(
       return { success: false, error: "Not authorized to modify this organization" }
     }
 
-    // Only owners and admins can modify portal settings
-    if (membership.role !== "owner" && membership.role !== "admin") {
-      return { success: false, error: "Insufficient permissions. Only owners and admins can reset the portal." }
+    // Only owners can modify portal settings
+    if (membership.role !== "owner") {
+      return { success: false, error: "Insufficient permissions. Only the owner can reset the portal." }
     }
 
     // Reset both theme and branding to empty objects

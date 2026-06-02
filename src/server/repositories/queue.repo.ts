@@ -116,6 +116,7 @@ export async function getQueueById(id: string) {
           id: true,
           name: true,
           slug: true,
+          portalTheme: true,
           portalBranding: true,
         },
       },

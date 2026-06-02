@@ -1,9 +1,8 @@
 import { auth, signOut } from "@/auth"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { Layers, LogOut } from "lucide-react"
+import { Layers, LogOut, Palette } from "lucide-react"
 import { requireWorkspaceOwner } from "@/server/lib/account-access"
 import { getUserOrganizationWithDetails } from "@/server/services/organization.service"
 import SidebarNav from "./SidebarNav"
@@ -38,6 +37,7 @@ export default async function DashboardLayout({
   const orgPortal = await getOrgPortalBySlug(organization.slug)
   
   const orgThemeClass = orgPortal?.theme.themeClass ?? ""
+  const orgModeClass = orgThemeClass !== "theme-custom" && orgPortal?.theme.mode === "dark" ? "dark" : ""
   // Only apply custom CSS variables if they exist AND we're using theme-custom
   const shouldApplyCustomVars = orgThemeClass === "theme-custom" && orgPortal?.theme.cssVars
   const customThemeStyle = shouldApplyCustomVars ? orgPortal.theme.cssVars : {}
@@ -46,7 +46,7 @@ export default async function DashboardLayout({
   const userInitials = userEmail.substring(0, 2).toUpperCase()
 
   return (
-    <div className={`flex min-h-screen bg-background text-foreground transition-colors duration-200 ${orgThemeClass}`} style={customThemeStyle}>
+    <div className={`flex min-h-screen bg-background text-foreground transition-colors duration-200 ${orgThemeClass} ${orgModeClass}`} style={customThemeStyle}>
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 border-r border-border bg-surface transition-colors duration-200">
         <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
@@ -60,7 +60,13 @@ export default async function DashboardLayout({
                 HiQueue
               </span>
             </div>
-            <ThemeToggle />
+            <Link
+              href={`/dashboard/organizations/${organization.slug}/portal`}
+              aria-label="Open theme settings"
+              className={buttonVariants({ variant: "ghost", size: "icon", className: "h-8 w-8 text-primary hover:text-primary" })}
+            >
+              <Palette className="h-4 w-4" />
+            </Link>
           </div>
 
           {/* Nav Links */}
@@ -93,7 +99,13 @@ export default async function DashboardLayout({
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <ThemeToggle />
+            <Link
+              href={`/dashboard/organizations/${organization.slug}/portal`}
+              aria-label="Open theme settings"
+              className={buttonVariants({ variant: "ghost", size: "icon", className: "h-8 w-8 text-primary hover:text-primary" })}
+            >
+              <Palette className="h-4 w-4" />
+            </Link>
             <form
               action={async () => {
                 "use server"

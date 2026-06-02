@@ -98,6 +98,8 @@ export function CustomColorPicker({ currentTheme, onChange, orgId }: CustomColor
   const handleColorChange = (key: string, value: string) => {
     onChange({
       ...currentTheme,
+      themeClass: "theme-custom",
+      mode: undefined,
       cssVars: {
         ...cssVars,
         [key]: value,
@@ -151,6 +153,9 @@ export function CustomColorPicker({ currentTheme, onChange, orgId }: CustomColor
             <Save className="h-4 w-4 mr-2" />
             {isSaving ? "Saving..." : "Save Colors"}
           </Button>
+        </div>
+        <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-on-surface-variant">
+          Editing these values automatically switches the active preset to <span className="font-semibold text-primary">Custom Colors</span>.
         </div>
       </CardHeader>
       <CardContent className="space-y-6">

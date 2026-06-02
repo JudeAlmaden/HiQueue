@@ -2,19 +2,25 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { getOrgPortalBySlug, verifyOrgMembership } from "@/server/repositories/portal.repo"
 import OrgLoginClient from "./OrgLoginClient"
+import { mergePortalTheme, parsePreviewThemeParam } from "@/lib/portal-theme"
 
 interface Props {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; previewTheme?: string }>
 }
 
 export default async function OrgLoginPage({ params, searchParams }: Props) {
   const { slug } = await params
-  const { error: errorParam } = await searchParams
+  const { error: errorParam, previewTheme } = await searchParams
 
   const org = await getOrgPortalBySlug(slug)
   if (!org) {
     redirect("/")
+  }
+
+  const preview = parsePreviewThemeParam(previewTheme)
+  if (preview) {
+    org.theme = mergePortalTheme(org.theme, preview)
   }
 
   const session = await auth()

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useTheme } from "next-themes"
-import { Sun, Moon, Palette, Droplets, Sunset, Contrast } from "lucide-react"
+import { Sun, Moon, Palette, MonitorCog } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme()
+  const { setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
 
   // Prevent hydration mismatch
@@ -37,6 +37,10 @@ export function ThemeToggle() {
         <span className="sr-only">Toggle theme</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-background">
+        <DropdownMenuItem onClick={() => setTheme("system")}>
+          <MonitorCog className="mr-2 h-4 w-4" />
+          <span>Default</span>
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("light")}>
           <Sun className="mr-2 h-4 w-4" />
           <span>Light</span>
@@ -44,22 +48,6 @@ export function ThemeToggle() {
         <DropdownMenuItem onClick={() => setTheme("dark")}>
           <Moon className="mr-2 h-4 w-4" />
           <span>Dark</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("theme-ocean")}>
-          <Droplets className="mr-2 h-4 w-4 text-blue-500" />
-          <span>Ocean</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("theme-sunset")}>
-          <Sunset className="mr-2 h-4 w-4 text-orange-500" />
-          <span>Sunset</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("theme-high-contrast")}>
-          <Contrast className="mr-2 h-4 w-4 text-black dark:text-white" />
-          <span>High Contrast</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("theme-custom")}>
-          <Palette className="mr-2 h-4 w-4 text-purple-500" />
-          <span>Custom</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -4,9 +4,12 @@ import { getQueueTickets } from "@/server/repositories/ticket.repo"
 import { getQueueCounters } from "@/server/repositories/counter.repo"
 import { LiveDisplayClient } from "./LiveDisplayClient"
 import { Metadata } from "next"
+import { getOrgPortalBySlug } from "@/server/repositories/portal.repo"
+import { mergePortalTheme, parsePreviewThemeParam } from "@/lib/portal-theme"
 
 interface Props {
   params: Promise<{ slug: string; queueId: string }>
+  searchParams: Promise<{ previewTheme?: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -19,8 +22,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function LiveDisplayPage({ params }: Props) {
+export default async function LiveDisplayPage({ params, searchParams }: Props) {
   const { slug, queueId } = await params
+  const { previewTheme } = await searchParams
+  const orgPortal = await getOrgPortalBySlug(slug)
+  if (!orgPortal) notFound()
+  const preview = parsePreviewThemeParam(previewTheme)
+  const effectiveTheme = preview ? mergePortalTheme(orgPortal.theme, preview) : orgPortal.theme
 
   const queue = await getQueueById(queueId)
   if (!queue) notFound()
@@ -53,6 +61,7 @@ export default async function LiveDisplayPage({ params }: Props) {
       initialCounters={JSON.parse(JSON.stringify(counters))}
       orgSlug={slug}
       hasPasscode={!!(queue.passcode && queue.passcode.trim().length > 0)}
+      portalTheme={effectiveTheme}
     />
   )
 }

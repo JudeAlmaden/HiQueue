@@ -241,6 +241,48 @@
   --ring: #0077b6;
 }
 
+.theme-ocean.dark {
+  --background: #061824;
+  --foreground: #e6f5ff;
+
+  --surface: #061824;
+  --surface-dim: #04131d;
+  --surface-container-lowest: #030f18;
+  --surface-container-low: #0a2231;
+  --surface-container: #0f2a3d;
+  --surface-container-high: #14334a;
+  --surface-container-highest: #1a3e57;
+  --on-surface: #e6f5ff;
+  --on-surface-variant: #b8d8ea;
+  --outline: #4d87a8;
+  --outline-variant: #2f5c73;
+
+  --primary: #58b6e8;
+  --on-primary: #032739;
+  --primary-container: #0f4e6e;
+  --on-primary-container: #cdeeff;
+
+  --secondary: #6ad8f0;
+  --on-secondary: #003640;
+  --secondary-container: #0c5e71;
+  --on-secondary-container: #d2f7ff;
+
+  --tertiary: #8ab8ff;
+  --on-tertiary: #10244d;
+  --tertiary-container: #2c4b86;
+  --on-tertiary-container: #dbe6ff;
+
+  --card: #0b2232;
+  --card-foreground: #e6f5ff;
+  --muted: #0f2a3d;
+  --muted-foreground: #98bdd3;
+  --accent: #0f4e6e;
+  --accent-foreground: #e6f5ff;
+  --border: #2f5c73;
+  --input: #14334a;
+  --ring: #58b6e8;
+}
+
 /* ─── Sunset Theme ──────────────────────────────────────────── */
 .theme-sunset {
   --background: #fff5eb;
@@ -289,8 +331,97 @@
   --ring: #e07a5f;
 }
 
+.theme-sunset.dark {
+  --background: #23130c;
+  --foreground: #ffe9db;
+
+  --surface: #23130c;
+  --surface-dim: #1b0f0a;
+  --surface-container-lowest: #150b07;
+  --surface-container-low: #2f1a11;
+  --surface-container: #3a2015;
+  --surface-container-high: #47281a;
+  --surface-container-highest: #552f1f;
+  --on-surface: #ffe9db;
+  --on-surface-variant: #f1c5ad;
+  --outline: #bc7f60;
+  --outline-variant: #794c35;
+
+  --primary: #ff9f7f;
+  --on-primary: #5a2313;
+  --primary-container: #893f2a;
+  --on-primary-container: #ffdbcc;
+
+  --secondary: #ffc081;
+  --on-secondary: #5f3200;
+  --secondary-container: #8b4a12;
+  --on-secondary-container: #ffe3c1;
+
+  --tertiary: #d79c9c;
+  --on-tertiary: #4f2222;
+  --tertiary-container: #734242;
+  --on-tertiary-container: #ffe0e0;
+
+  --card: #2f1a11;
+  --card-foreground: #ffe9db;
+  --muted: #3a2015;
+  --muted-foreground: #d39d82;
+  --accent: #893f2a;
+  --accent-foreground: #ffe9db;
+  --border: #794c35;
+  --input: #47281a;
+  --ring: #ff9f7f;
+}
+
 /* ─── High Contrast Theme ───────────────────────────────────── */
 .theme-high-contrast {
+  --background: #ffffff;
+  --foreground: #000000;
+
+  --surface: #ffffff;
+  --surface-dim: #f2f2f2;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #ebebeb;
+  --surface-container: #e0e0e0;
+  --surface-container-high: #d1d1d1;
+  --surface-container-highest: #c2c2c2;
+  --on-surface: #000000;
+  --on-surface-variant: #1a1a1a;
+  --outline: #000000;
+  --outline-variant: #4d4d4d;
+
+  --primary: #ffff00;
+  --on-primary: #000000;
+  --primary-container: #f0f000;
+  --on-primary-container: #000000;
+
+  --secondary: #00ffff;
+  --on-secondary: #000000;
+  --secondary-container: #00d5d5;
+  --on-secondary-container: #000000;
+
+  --tertiary: #ff00ff;
+  --on-tertiary: #000000;
+  --tertiary-container: #e600e6;
+  --on-tertiary-container: #000000;
+
+  --error: #ff0000;
+  --on-error: #ffffff;
+  --error-container: #ff6666;
+  --on-error-container: #000000;
+
+  --card: #ffffff;
+  --card-foreground: #000000;
+  --muted: #e0e0e0;
+  --muted-foreground: #1a1a1a;
+  --accent: #ffff00;
+  --accent-foreground: #000000;
+  --border: #000000;
+  --input: #e0e0e0;
+  --ring: #ffff00;
+}
+
+.theme-high-contrast.dark {
   --background: #000000;
   --foreground: #ffffff;
 
@@ -339,8 +470,27 @@
 
 /* ─── Custom Theme (Uses CSS Variables) ────────────────────── */
 .theme-custom {
-  /* Custom theme uses only the CSS variables set via customization
-     No predefined colors - all colors come from cssVars */
+  /* Derive secondary/tertiary container and other variables automatically */
+  --primary-container:             color-mix(in srgb, var(--primary) 15%, var(--background, #ffffff));
+  --on-primary-container:          color-mix(in srgb, var(--primary) 85%, var(--foreground, #000000));
+  --secondary-container:           color-mix(in srgb, var(--secondary) 15%, var(--background, #ffffff));
+  --on-secondary-container:        color-mix(in srgb, var(--secondary) 85%, var(--foreground, #000000));
+  --card:                          var(--surface);
+  --card-foreground:               var(--foreground);
+  --muted:                         var(--surface-dim, color-mix(in srgb, var(--surface) 90%, var(--foreground, #000000)));
+  --muted-foreground:              var(--on-surface-variant, color-mix(in srgb, var(--foreground, #000000) 60%, var(--background, #ffffff)));
+  --border:                        var(--outline-variant, color-mix(in srgb, var(--foreground, #000000) 12%, var(--surface)));
+  --input:                         var(--surface-container-low, color-mix(in srgb, var(--surface) 96%, var(--foreground, #000000)));
+  --ring:                          var(--primary);
+  
+  /* Fallbacks for design system */
+  --surface-container:             color-mix(in srgb, var(--surface) 96%, var(--foreground, #000000));
+  --surface-container-low:         color-mix(in srgb, var(--surface) 98%, var(--foreground, #000000));
+  --surface-container-high:        color-mix(in srgb, var(--surface) 92%, var(--foreground, #000000));
+  --surface-container-highest:     color-mix(in srgb, var(--surface) 88%, var(--foreground, #000000));
+  --on-surface-variant:            color-mix(in srgb, var(--foreground, #000000) 70%, var(--background, #ffffff));
+  --outline:                       color-mix(in srgb, var(--foreground, #000000) 45%, var(--background, #ffffff));
+  --outline-variant:               color-mix(in srgb, var(--foreground, #000000) 15%, var(--background, #ffffff));
 }
 
 @layer base {

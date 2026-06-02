@@ -1,12 +1,14 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import type { PortalTheme } from "@/lib/portal-theme"
-import { Check } from "lucide-react"
+import { Check, SlidersHorizontal, Sparkles } from "lucide-react"
 
 interface ThemeSelectorProps {
   currentTheme: PortalTheme
   onChange: (theme: PortalTheme) => void
+  onOpenCustomColors?: () => void
 }
 
 interface ThemeOption {
@@ -39,8 +41,8 @@ const THEME_OPTIONS: ThemeOption[] = [
     description: "Use only your custom colors without a pre-built theme.",
     themeClass: "theme-custom",
     colors: {
-      primary: "#691075",
-      secondary: "#ff99ec",
+      primary: "#4a654e",
+      secondary: "#586249",
       background: "#faf9f6",
     },
   },
@@ -79,7 +81,7 @@ const THEME_OPTIONS: ThemeOption[] = [
   },
 ]
 
-export function ThemeSelector({ currentTheme, onChange }: ThemeSelectorProps) {
+export function ThemeSelector({ currentTheme, onChange, onOpenCustomColors }: ThemeSelectorProps) {
   const currentThemeClass = currentTheme.themeClass ?? ""
   const cssVars = currentTheme.cssVars || {}
 
@@ -89,14 +91,15 @@ export function ThemeSelector({ currentTheme, onChange }: ThemeSelectorProps) {
     
     onChange({
       themeClass: themeOption.themeClass || undefined,
+      mode: themeOption.id === "custom" ? undefined : currentTheme.mode,
       cssVars: shouldClearVars ? undefined : currentTheme.cssVars,
     })
   }
 
   // Get custom colors from cssVars or use defaults
   const customColors = {
-    primary: cssVars["--primary"] || "#691075",
-    secondary: cssVars["--secondary"] || "#ff99ec",
+    primary: cssVars["--primary"] || "#4a654e",
+    secondary: cssVars["--secondary"] || "#586249",
     background: cssVars["--background"] || "#faf9f6",
   }
 
@@ -118,14 +121,26 @@ export function ThemeSelector({ currentTheme, onChange }: ThemeSelectorProps) {
               ? customColors 
               : themeOption.colors
             
+            const isCustomOption = themeOption.id === "custom"
+
             return (
-              <button
+              <div
                 key={themeOption.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => handleThemeSelect(themeOption)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault()
+                    handleThemeSelect(themeOption)
+                  }
+                }}
                 className={`group relative flex flex-col gap-3 rounded-xl border-2 p-4 text-left transition-all hover:shadow-md ${
                   isSelected
                     ? "border-primary bg-primary/5 shadow-sm"
-                    : "border-border bg-card hover:border-primary/50"
+                    : isCustomOption
+                      ? "border-dashed border-border bg-card hover:border-primary/50"
+                      : "border-border bg-card hover:border-primary/50"
                 }`}
               >
                 {/* Selected Indicator */}
@@ -156,17 +171,42 @@ export function ThemeSelector({ currentTheme, onChange }: ThemeSelectorProps) {
 
                 {/* Theme Info */}
                 <div>
-                  <h3 className="font-semibold text-on-surface">{themeOption.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-on-surface">{themeOption.name}</h3>
+                    {isCustomOption && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                        <Sparkles className="h-3 w-3" />
+                        Saved Palette
+                      </span>
+                    )}
+                  </div>
                   <p className="mt-1 text-xs text-on-surface-variant">
                     {themeOption.description}
                   </p>
                 </div>
 
                 {/* Preview Badge */}
-                <div className="text-xs font-medium text-primary">
-                  {isSelected ? "Currently active" : "Click to select"}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-xs font-medium text-primary">
+                    {isSelected ? "Currently active" : "Click to select"}
+                  </div>
+                  {isCustomOption && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-[11px]"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onOpenCustomColors?.()
+                      }}
+                    >
+                      <SlidersHorizontal className="h-3 w-3 mr-1" />
+                      Customize
+                    </Button>
+                  )}
                 </div>
-              </button>
+              </div>
             )
           })}
         </div>

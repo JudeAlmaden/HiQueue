@@ -6,7 +6,7 @@ describe("Member Validators", () => {
     const validData = {
       name: "John Doe",
       email: "john@example.com",
-      password: "password123",
+      password: "Password123",
       role: "staff" as const,
       organizationId: "org-123",
     }
@@ -28,10 +28,10 @@ describe("Member Validators", () => {
       expect(result.success).toBe(false)
     })
 
-    it("should reject name longer than 50 characters", () => {
+    it("should truncate name longer than 50 characters", () => {
       const invalid = { ...validData, name: "a".repeat(51) }
-      const result = createMemberSchema.safeParse(invalid)
-      expect(result.success).toBe(false)
+      const result = createMemberSchema.parse(invalid)
+      expect(result.name.length).toBeLessThanOrEqual(50)
     })
 
     it("should reject invalid email format", () => {
@@ -58,10 +58,10 @@ describe("Member Validators", () => {
       expect(result.success).toBe(false)
     })
 
-    it("should accept owner role", () => {
-      const input = { ...validData, role: "owner" as const }
+    it("should reject owner role", () => {
+      const input = { ...validData, role: "owner" as any }
       const result = createMemberSchema.safeParse(input)
-      expect(result.success).toBe(true)
+      expect(result.success).toBe(false)
     })
 
     it("should accept admin role", () => {

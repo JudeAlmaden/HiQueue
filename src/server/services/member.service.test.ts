@@ -10,6 +10,9 @@ vi.mock("@/server/lib/db", () => ({
     organizationMembership: {
       findUnique: vi.fn(),
     },
+    counter: {
+      count: vi.fn(),
+    },
   },
 }))
 
@@ -20,6 +23,9 @@ describe("MemberService", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(memberRepo.getOrganizationMembers).mockResolvedValue([])
+    vi.mocked(memberRepo.softDeleteMember).mockResolvedValue(undefined as any)
+    vi.mocked(db.counter.count).mockResolvedValue(0)
   })
 
   describe("createMember", () => {
@@ -175,7 +181,7 @@ describe("MemberService", () => {
           updatedAt: new Date(),
         })
 
-      vi.mocked(memberRepo.deleteMember).mockResolvedValue(undefined)
+      vi.mocked(memberRepo.softDeleteMember).mockResolvedValue(undefined as any)
 
       const result = await memberService.deleteMember(deleteInput, mockUserId)
 
