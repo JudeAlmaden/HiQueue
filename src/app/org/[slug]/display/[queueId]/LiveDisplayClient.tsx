@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react"
 import { Monitor, Clock, Users, Lock, Loader2, QrCode } from "lucide-react"
 import { verifyKioskPasscodeAction } from "@/server/actions/ticket.action"
 import { QRCodeSVG } from "qrcode.react"
+import type { PortalTheme } from "@/lib/portal-theme"
+import { LiveDisplayLayoutShell } from "@/components/portal/layouts/LiveDisplayLayouts"
 
 interface Service {
   id: string
@@ -55,9 +57,26 @@ interface Props {
   initialCounters: Counter[]
   orgSlug: string
   hasPasscode: boolean
+  portalTheme?: PortalTheme
 }
 
-export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasPasscode }: Props) {
+function readPortalColor(value?: string, fallback?: string) {
+  if (!value) return fallback
+  const trimmed = value.trim()
+  if (!trimmed) return fallback
+  if (trimmed.startsWith("#") || trimmed.startsWith("rgb") || trimmed.startsWith("hsl")) return trimmed
+  if (trimmed.includes(" ")) return `rgb(${trimmed})`
+  return fallback
+}
+
+export function LiveDisplayClient({
+  queue,
+  initialTickets,
+  initialCounters,
+  orgSlug,
+  hasPasscode,
+  portalTheme,
+}: Props) {
   const [tickets, setTickets] = useState<Ticket[]>(initialTickets)
   const [counters, setCounters] = useState<Counter[]>(initialCounters)
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -307,8 +326,14 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
     }
   }, [scrollPosition])
 
-  const primaryColor = branding.primaryColor || "#4a654e"
+  const primaryColor =
+    readPortalColor(portalTheme?.cssVars?.["--primary"], branding.primaryColor) || "#4a654e"
   const logoUrl = branding.logoUrl
+  const layoutPreset = portalTheme?.layout?.liveDisplay ?? "standard"
+  const displayControls = portalTheme?.layoutControls?.liveDisplay
+  const shellPadding =
+    layoutPreset === "no-waiting" ? "px-8 py-6" : "px-6 py-6"
+  const showWaitingQueue = layoutPreset !== "no-waiting"
 
   // Show auth screen if not authenticated
   if (!isHydrated || (hasPasscode && !isAuthenticated)) {
@@ -366,10 +391,37 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
     )
   }
 
+  const themeClass = portalTheme?.themeClass ?? ""
+  const modeClass = themeClass !== "theme-custom" && portalTheme?.mode === "dark" ? "dark" : ""
+  const shouldApplyCustomVars = themeClass === "theme-custom" && portalTheme?.cssVars
+  const themeStyle = shouldApplyCustomVars ? portalTheme?.cssVars : {}
+
   return (
-    <div className="fixed inset-0 bg-[#faf9f6] overflow-hidden flex flex-col">
+    <div 
+      className={`fixed inset-0 overflow-hidden transition-colors duration-200 bg-background text-foreground ${themeClass} ${modeClass}`}
+      style={{
+        ...themeStyle,
+        backgroundColor: displayControls?.pageBg,
+        backgroundImage: displayControls?.pageBgImage ? `url(${displayControls.pageBgImage})` : undefined,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
+        color: displayControls?.fontColor,
+      }}
+    >
+      <div 
+        className="h-full w-full flex flex-col"
+        style={{
+          transform: displayControls?.typographyScale && displayControls.typographyScale !== 1 ? `scale(${displayControls.typographyScale})` : undefined,
+          transformOrigin: "top center",
+          minHeight: displayControls?.typographyScale && displayControls.typographyScale < 1 
+            ? `${100 / displayControls.typographyScale}%` 
+            : '100%',
+        }}
+      >
       {/* Header */}
-      <header className="bg-white border-b border-[#e3e2e0] px-8 py-6 flex-shrink-0 shadow-[0_2px_8px_rgba(44,74,62,0.04)]">
+      <header className="bg-white border-b border-[#e3e2e0] px-8 py-4 flex-shrink-0 shadow-[0_2px_8px_rgba(44,74,62,0.04)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
             {logoUrl && (
@@ -392,20 +444,22 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
         </div>
       </header>
 
-      <main className="flex-1 overflow-hidden flex flex-col px-8 py-8">
-        <div className="flex-1 grid grid-cols-12 gap-8 min-h-0">
-          {/* Left Column: Now Serving */}
-          <div className="col-span-8 flex flex-col min-h-0">
+      <main className={`flex-1 flex flex-col min-h-0 ${shellPadding}`}>
+        <LiveDisplayLayoutShell
+          layout={layoutPreset}
+          primary={
+            <div className="flex flex-col min-h-0 h-full">
             <div className="flex items-center gap-3 mb-6 flex-shrink-0">
-              <div className="h-12 w-12 rounded-[1rem] bg-[#cceace] flex items-center justify-center">
-                <Monitor className="h-6 w-6 text-[#4a654e]" />
+              <div className="h-12 w-12 rounded-[1rem] bg-primary/15 flex items-center justify-center">
+                <Monitor className="h-6 w-6 text-primary" />
               </div>
               <h2 className="text-[28px] font-bold text-[#1a1c1a] leading-tight">Now Serving</h2>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-6 min-h-0">
+            <div className="flex-1 flex flex-col overflow-y-auto min-h-0">
               {servingTickets.length > 0 ? (
-                servingTickets.map(({ ticket, counter }) => (
+                <div className="space-y-6">
+                  {servingTickets.map(({ ticket, counter }) => (
                   <div
                     key={ticket.id}
                     className="bg-white rounded-[1.5rem] p-8 shadow-[0_10px_40px_rgba(44,74,62,0.08)] border border-[#e3e2e0]"
@@ -437,8 +491,8 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
                       </div>
 
                       <div className="text-right">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#cceace] border border-[#b0ceb2] mb-3">
-                          <div className="h-2 w-2 rounded-full bg-[#4a654e] animate-pulse"></div>
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/15 border border-primary/30 mb-3">
+                          <div className="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
                           <span className="text-xs font-bold text-[#07200f]">Serving Now</span>
                         </div>
                         <div className="text-base font-semibold text-[#424842]">
@@ -447,9 +501,10 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
                       </div>
                     </div>
                   </div>
-                ))
+                ))}
+                </div>
               ) : (
-                <div className="bg-white rounded-[1.5rem] p-16 text-center h-full flex flex-col items-center justify-center shadow-[0_10px_40px_rgba(44,74,62,0.08)] border border-[#e3e2e0]">
+                <div className="bg-white rounded-[1.5rem] p-16 text-center flex-1 flex flex-col items-center justify-center shadow-[0_10px_40px_rgba(44,74,62,0.08)] border border-[#e3e2e0]">
                   <div className="h-20 w-20 rounded-full bg-[#f4f3f1] flex items-center justify-center mx-auto mb-6">
                     <Clock className="h-10 w-10 text-[#737972]" />
                   </div>
@@ -459,12 +514,12 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
               )}
             </div>
           </div>
-
-          {/* Right Column: Waiting Queue */}
-          <div className="col-span-4 flex min-h-0 flex-col">
+          }
+          waiting={showWaitingQueue ? (
+          <div className="flex min-h-0 flex-col h-full">
             <div className="mb-4 flex flex-shrink-0 items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-[0.85rem] bg-[#dde7c7]">
-                <Users className="h-5 w-5 text-[#586249]" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-[0.85rem] bg-secondary/20">
+                <Users className="h-5 w-5 text-secondary" />
               </div>
               <div>
                 <h2 className="text-[18px] font-bold text-[#1a1c1a] leading-tight">Waiting Queue</h2>
@@ -472,11 +527,11 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
               </div>
             </div>
 
-            <div className="flex-1 min-h-0 rounded-[1.25rem] border border-[#e3e2e0] bg-white p-4 shadow-[0_10px_40px_rgba(44,74,62,0.08)]">
+            <div className="flex-1 min-h-0 rounded-[1.25rem] border border-[#e3e2e0] bg-white p-4 shadow-[0_10px_40px_rgba(44,74,62,0.08)] flex flex-col">
               {waitingTickets.length > 0 ? (
                 <div 
                   ref={scrollContainerRef}
-                  className="h-full space-y-2 overflow-y-auto pr-2 scroll-smooth [&::-webkit-scrollbar]:hidden"
+                  className="flex-1 space-y-2 overflow-y-auto pr-2 scroll-smooth [&::-webkit-scrollbar]:hidden"
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                   {waitingTickets.map((ticket, index) => (
@@ -485,7 +540,7 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
                       className="rounded-[0.9rem] bg-[#f4f3f1] px-4 py-3 transition-all hover:bg-[#efeeeb]"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[0.5rem] bg-[#cceace] text-xs font-black text-[#4a654e]">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[0.5rem] bg-primary/15 text-xs font-black text-primary">
                             {index + 1}
                         </div>
                         <div className="min-w-0 flex-1">
@@ -501,7 +556,7 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 h-full flex flex-col items-center justify-center">
+                <div className="flex-1 text-center flex flex-col items-center justify-center">
                   <div className="h-16 w-16 rounded-full bg-[#f4f3f1] flex items-center justify-center mx-auto mb-4">
                     <Users className="h-8 w-8 text-[#737972]" />
                   </div>
@@ -514,7 +569,7 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
             <div className="mt-4 flex-shrink-0 rounded-[1.25rem] border border-[#e3e2e0] bg-white p-6 shadow-[0_10px_40px_rgba(44,74,62,0.08)]">
               <div className="text-center space-y-3">
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <QrCode className="h-5 w-5 text-[#4a654e]" />
+                  <QrCode className="h-5 w-5 text-primary" />
                   <h3 className="text-base font-bold text-[#1a1c1a]">Where&apos;s my ticket?</h3>
                 </div>
                 <div className="flex justify-center">
@@ -531,21 +586,22 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
               </div>
             </div>
           </div>
-        </div>
+          ) : null}
+        />
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-[#e3e2e0] px-8 py-4 flex-shrink-0 shadow-[0_-2px_8px_rgba(44,74,62,0.04)]">
+      <footer className="bg-white border-t border-[#e3e2e0] px-8 py-3 flex-shrink-0 shadow-[0_-2px_8px_rgba(44,74,62,0.04)]">
         <div className="flex items-center justify-between text-xs text-[#737972]">
           <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-[#4a654e] animate-pulse"></div>
+            <div className="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
             <span className="font-semibold">Live Updates Active</span>
           </div>
           <a 
             href={`/live/${queue.id}/track`}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-semibold hover:text-[#4a654e] transition-colors flex items-center gap-1.5"
+            className="font-semibold hover:text-primary transition-colors flex items-center gap-1.5"
           >
             <QrCode className="h-3.5 w-3.5" />
             Where&apos;s my ticket?
@@ -555,6 +611,7 @@ export function LiveDisplayClient({ queue, initialTickets, initialCounters, hasP
           </div>
         </div>
       </footer>
+      </div>
     </div>
   )
 }

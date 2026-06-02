@@ -15,6 +15,8 @@ import {
   LogOut,
   Ticket,
 } from "lucide-react"
+import type { PortalTheme } from "@/lib/portal-theme"
+import { TicketingLayoutShell } from "@/components/portal/layouts/TicketingLayouts"
 
 interface Service {
   id: string
@@ -31,6 +33,8 @@ interface Props {
   hasPasscode: boolean
   services: Service[]
   initialQueueOpen: boolean
+  portalTheme?: PortalTheme
+  logoUrl?: string | null
 }
 
 interface LatestCallEvent {
@@ -42,6 +46,10 @@ interface LatestCallEvent {
 }
 
 type Screen = "AUTH" | "TICKET" | "SUCCESS"
+type ServingTicket = {
+  id: string
+  code: string
+}
 
 export function LiveKioskClient({
   queueId,
@@ -49,6 +57,8 @@ export function LiveKioskClient({
   queueDescription,
   hasPasscode,
   services,
+  portalTheme,
+  logoUrl,
 }: Props) {
   const toasts = useToast()
   const [screen, setScreen] = useState<Screen>(hasPasscode ? "AUTH" : "TICKET")
@@ -75,7 +85,7 @@ export function LiveKioskClient({
     customerName?: string
   } | null>(null)
   const [countdown, setCountdown] = useState(12)
-  const [servingTickets, setServingTickets] = useState<any[]>([])
+  const [servingTickets, setServingTickets] = useState<ServingTicket[]>([])
   const lastCallEventId = useRef<string | null | undefined>(undefined)
 
   const playCallSound = () => {
@@ -127,7 +137,7 @@ export function LiveKioskClient({
         try {
           const payload = JSON.parse(event.data)
           if (payload.tickets) {
-            const serving = payload.tickets.filter((t: any) => t.status === "serving")
+            const serving = payload.tickets.filter((t: { status: string }) => t.status === "serving")
             setServingTickets(serving)
           }
           const latestCallEvent = payload.latestCallEvent as LatestCallEvent | null | undefined
@@ -220,12 +230,16 @@ export function LiveKioskClient({
 
   const handleGetTicket = async () => {
     if (!selectedServiceId) return
+    if (!normalizedCustomerName) {
+      toasts.error("Please enter your name before getting a ticket.")
+      return
+    }
     setIsSubmitting(true)
     try {
       const res = await createTicketAction({
         queueId,
         serviceId: selectedServiceId,
-        customerName: customerName.trim() || null,
+        customerName: normalizedCustomerName,
       })
 
       if (res.success) {
@@ -235,7 +249,7 @@ export function LiveKioskClient({
           waitCount: res.data.waitCount,
           estimatedWaitTime: res.data.estimatedWaitTime,
           serviceName: res.data.serviceName,
-          customerName: customerName.trim() || undefined,
+          customerName: normalizedCustomerName || undefined,
         })
         setScreen("SUCCESS")
       } else {
@@ -262,6 +276,16 @@ export function LiveKioskClient({
   }
 
   const selectedService = services.find((s) => s.id === selectedServiceId)
+  const layoutPreset = portalTheme?.layout?.ticketing ?? "card"
+  const ticketingControls = portalTheme?.layoutControls?.ticketing
+  const isCardLayout = layoutPreset === "card"
+  const serviceCount = services.length
+  const normalizedCustomerName = customerName.trim()
+  const canSubmitTicket = Boolean(selectedServiceId && normalizedCustomerName && !isSubmitting)
+  const ticketingScale = ticketingControls?.typographyScale ?? 1
+  const ticketingFontColor = ticketingControls?.fontColor
+  const ticketingSharpness = ticketingControls?.sharpness
+  const ticketingPageBg = ticketingControls?.pageBg
 
   // ── Render: Loading / hydrating ──────────────────────────────────────────
   if (!isHydrated) {
@@ -275,11 +299,8 @@ export function LiveKioskClient({
   // ── Render: AUTH ─────────────────────────────────────────────────────────
   if (screen === "AUTH") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f0f0f0] px-4">
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg overflow-hidden">
-          {/* Top accent bar */}
-          <div className="h-1.5 bg-gradient-to-r from-primary to-secondary" />
-
           <div className="p-8 space-y-6">
             <div className="text-center space-y-2">
               <div className="h-11 w-11 mx-auto bg-primary/10 text-primary flex items-center justify-center rounded-xl">
@@ -347,10 +368,8 @@ export function LiveKioskClient({
   // ── Render: SUCCESS ──────────────────────────────────────────────────────
   if (screen === "SUCCESS" && createdTicket) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f0f0f0] px-4">
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg overflow-hidden text-center">
-          <div className="h-1.5 bg-gradient-to-r from-primary to-secondary" />
-
           <div className="p-8 space-y-6">
             {/* Icon */}
             <div className="h-14 w-14 mx-auto bg-primary/10 text-primary rounded-full flex items-center justify-center">
@@ -411,14 +430,30 @@ export function LiveKioskClient({
 
   // ── Render: TICKETING ────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#f0f0f0] flex flex-col">
+    <div
+      className="min-h-screen bg-background flex flex-col"
+      style={{
+        backgroundColor: ticketingPageBg,
+        backgroundImage: ticketingControls?.pageBgImage ? `url(${ticketingControls.pageBgImage})` : undefined,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
+        color: ticketingFontColor,
+      }}
+    >
       {/* Minimal top bar */}
       <div className="flex items-center justify-between px-6 py-3">
         <div className="flex items-center gap-2 opacity-60">
-          <div className="h-6 w-6 bg-primary rounded-lg flex items-center justify-center text-on-primary text-[10px] font-bold">
-            HQ
+          <div className="h-6 w-6 bg-primary rounded-lg flex items-center justify-center text-on-primary text-[10px] font-bold overflow-hidden">
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt={`${queueName} logo`} className="h-full w-full object-contain bg-white" />
+            ) : (
+              "HQ"
+            )}
           </div>
-          <span className="text-xs font-bold text-on-surface tracking-tight">HiQueue</span>
+          <span className="text-xs font-bold text-on-surface tracking-tight">{queueName}</span>
         </div>
         {hasPasscode && (
           <button
@@ -431,57 +466,110 @@ export function LiveKioskClient({
         )}
       </div>
 
-      {/* Main card */}
-      <div className="flex-grow flex items-center justify-center px-4 pb-8 w-full max-w-lg mx-auto">
-        {/* Ticketing Form Card */}
-        <div className="w-full bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col justify-between">
-          <div>
-            <div className="h-1.5 bg-gradient-to-r from-primary to-secondary" />
-
-            <div className="p-8 space-y-6">
+      <div
+        className="flex-1 flex"
+        style={{
+          transform: `scale(${ticketingScale})`,
+          transformOrigin: "top center",
+        }}
+      >
+      <TicketingLayoutShell
+        layout={layoutPreset}
+        left={
+          <>
               {/* Title */}
-              <div className="text-center space-y-1.5">
-                <h1 className="text-3xl font-extrabold text-primary tracking-tight">
-                  Get Your Ticket
-                </h1>
-                <p className="text-sm text-on-surface-variant leading-relaxed max-w-sm mx-auto">
-                  {queueDescription || `Welcome to ${queueName}. Let's make your experience hassle-free.`}
+              <div
+                className={
+                  layoutPreset === "split-services"
+                    ? "space-y-1.5"
+                    : "text-center space-y-1.5"
+                }
+              >
+                <h1 className="text-3xl font-extrabold text-primary tracking-tight">Get Your Ticket</h1>
+                <p
+                  className={`text-sm text-on-surface-variant leading-relaxed ${
+                    layoutPreset === "split-services"
+                      ? ""
+                      : "max-w-sm mx-auto"
+                  }`}
+                >
+                  {queueDescription || `Welcome to ${queueName}. Let&apos;s make your experience hassle-free.`}
                 </p>
               </div>
 
               {/* Service Selector */}
               <div className="space-y-3">
-                <p className="text-xs font-semibold text-on-surface-variant text-center tracking-wide">
+                <p
+                  className={`text-xs font-semibold text-on-surface-variant tracking-wide ${
+                    layoutPreset === "split-services"
+                      ? ""
+                      : "text-center"
+                  }`}
+                >
                   Choose where to queue:
                 </p>
 
                 {services.length > 0 ? (
-                  <div className="flex flex-wrap gap-3 justify-center">
+                  <div
+                    className={[
+                      "grid gap-3",
+                      // split-services: keep buttons larger by using fewer columns
+                      layoutPreset === "split-services"
+                        ? [
+                            "grid-cols-1",
+                            serviceCount <= 2 ? "sm:grid-cols-1" : "sm:grid-cols-2",
+                            serviceCount <= 6 ? "lg:grid-cols-2" : "lg:grid-cols-3",
+                          ].join(" ")
+                        : [
+                            // other layouts: denser, centered grid
+                            "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+                            serviceCount <= 1
+                              ? "xl:grid-cols-1"
+                              : serviceCount === 2
+                                ? "xl:grid-cols-2"
+                                : serviceCount <= 4
+                                  ? "xl:grid-cols-2"
+                                  : serviceCount <= 9
+                                    ? "xl:grid-cols-3"
+                                    : "xl:grid-cols-4",
+                            "justify-items-center",
+                          ].join(" "),
+                    ].join(" ")}
+                  >
                     {services.map((service) => {
                       const isClosed = !service.isActive
+                      const isSelected = selectedServiceId === service.id
                       return (
                         <button
                           key={service.id}
                           disabled={isClosed}
                           onClick={() =>
-                            setSelectedServiceId(
-                              selectedServiceId === service.id ? null : service.id
-                            )
+                            setSelectedServiceId(selectedServiceId === service.id ? null : service.id)
                           }
                           className={`
-                            px-5 py-3 rounded-xl border-2 font-bold text-sm transition-all duration-200 min-w-[100px] flex items-center justify-center gap-1.5
+                            w-full rounded-2xl border-2 transition-all duration-200 text-left
+                            px-6 py-5 min-h-[84px]
                             ${
                               isClosed
                                 ? "border-dashed border-red-200/50 bg-red-50/20 text-on-surface-variant/40 cursor-not-allowed opacity-60"
-                                : selectedServiceId === service.id
-                                  ? "border-primary bg-primary text-on-primary shadow-md scale-105 cursor-pointer"
+                                : isSelected
+                                  ? "border-primary bg-primary text-on-primary shadow-md scale-[1.02] cursor-pointer"
                                   : "border-outline-variant bg-surface-container text-on-surface hover:border-primary/50 hover:bg-surface-low cursor-pointer"
                             }
                           `}
+                          style={{ borderRadius: ticketingSharpness }}
                         >
-                          {isClosed && <span className="h-1.5 w-1.5 rounded-full bg-red-400" />}
-                          <span>{service.name}</span>
-                          {isClosed && <span className="text-[10px] font-semibold text-red-500/80 ml-0.5">(Closed)</span>}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="font-extrabold text-base leading-tight truncate">{service.name}</div>
+                              <div className={`mt-1 text-xs font-semibold ${isSelected ? "text-on-primary/80" : "text-on-surface-variant"}`}>
+                                Prefix {service.prefix} • ~{service.avgDurationMinutes || 10} min
+                              </div>
+                            </div>
+                            {isClosed && (
+                              <span className="text-[11px] font-bold text-red-500/90 whitespace-nowrap">(Closed)</span>
+                            )}
+                          </div>
                         </button>
                       )
                     })}
@@ -496,61 +584,100 @@ export function LiveKioskClient({
                   </div>
                 )}
               </div>
-
+          </>
+        }
+        right={
+          <div className={isCardLayout ? "flex flex-col items-center" : undefined}>
+            <div className={isCardLayout ? "w-full max-w-[440px]" : undefined}>
               {/* Selected service hint */}
               {selectedService && (
-                <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-2.5 text-xs text-primary font-medium flex items-center gap-2">
+                <div
+                  className={`bg-primary/5 border border-primary/20 rounded-xl px-4 py-2.5 text-xs text-primary font-medium flex items-center gap-2 ${
+                    isCardLayout ? "justify-center" : ""
+                  }`}
+                >
                   <Clock className="h-3.5 w-3.5 shrink-0" />
                   <span>
-                    <strong>{selectedService.name}</strong> — avg.{" "}
-                    {selectedService.avgDurationMinutes || 10} min per customer
+                    <strong>{selectedService.name}</strong> - avg. {selectedService.avgDurationMinutes || 10} min per customer
                   </span>
                 </div>
               )}
 
               {/* Name Input */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-on-surface-variant">
-                  Name (Optional)
-                </label>
+              <div
+                className={
+                  isCardLayout
+                    ? "mt-4 space-y-1.5 w-full"
+                    : layoutPreset === "split-services"
+                      ? "mt-2 space-y-2.5"
+                      : "space-y-1.5"
+                }
+              >
+                <label className="text-xs font-semibold text-on-surface-variant">Name</label>
                 <Input
                   type="text"
-                  placeholder="e.g. Maria Santos"
+                  placeholder="e.g. Maria"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && selectedServiceId && !isSubmitting) handleGetTicket()
+                    if (e.key === "Enter" && selectedServiceId && normalizedCustomerName && !isSubmitting) handleGetTicket()
                   }}
                   className="h-11 rounded-xl border border-outline-variant bg-surface-container text-on-surface focus-visible:ring-2 focus-visible:ring-primary px-4 placeholder:text-on-surface-variant/40"
                   disabled={isSubmitting}
+                  required
+                  style={{ borderRadius: ticketingSharpness }}
                 />
               </div>
 
               {/* Submit Button */}
-              <Button
-                onClick={handleGetTicket}
-                disabled={!selectedServiceId || isSubmitting}
-                className="w-full h-12 rounded-full text-sm font-extrabold bg-primary text-on-primary hover:opacity-90 shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating Ticket...
-                  </>
-                ) : (
-                  "Get My Ticket"
-                )}
-              </Button>
+              <div className={isCardLayout ? "mt-4 w-full" : layoutPreset === "split-services" ? "mt-4" : undefined}>
+                <Button
+                  onClick={handleGetTicket}
+                  disabled={!canSubmitTicket}
+                  className="w-full h-12 rounded-full text-sm font-extrabold bg-primary text-on-primary hover:opacity-90 shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                  style={{ borderRadius: ticketingSharpness }}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating Ticket...
+                    </>
+                  ) : (
+                    "Get My Ticket"
+                  )}
+                </Button>
+              </div>
+              {!selectedServiceId || !normalizedCustomerName ? (
+                <p className="text-xs text-on-surface-variant text-center">
+                  {!selectedServiceId
+                    ? "Select a service to continue."
+                    : "Enter your name to generate a ticket."}
+                </p>
+              ) : null}
             </div>
           </div>
-        </div>
+        }
+      />
       </div>
 
       {/* Footer */}
-      <div className="text-center pb-4">
+      <div className="px-6 pb-4">
+        <div className="mx-auto max-w-5xl rounded-xl border border-border bg-surface px-4 py-2">
+          <p className="text-xs text-on-surface-variant">
+            <span className="font-semibold text-on-surface">How it works:</span> 1) Select a service 2) Enter your name 3) Tap Get My Ticket
+          </p>
+          {servingTickets.length > 0 && (
+            <p className="mt-1 text-xs text-primary">
+              Now serving: {servingTickets.slice(0, 4).map((ticket) => ticket.code).join(" • ")}
+            </p>
+          )}
+        </div>
+
+        <div className="text-center mt-3">
         <p className="text-[10px] text-on-surface-variant/40">
           Powered by HiQueue &bull; Calm, premium waiting experience
         </p>
+        </div>
       </div>
     </div>
   )
