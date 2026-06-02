@@ -57,6 +57,10 @@ export function ThemeToggle() {
           <Contrast className="mr-2 h-4 w-4 text-black dark:text-white" />
           <span>High Contrast</span>
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("theme-custom")}>
+          <Palette className="mr-2 h-4 w-4 text-purple-500" />
+          <span>Custom</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

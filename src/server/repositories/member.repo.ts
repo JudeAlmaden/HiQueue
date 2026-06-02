@@ -135,6 +135,54 @@ export async function deleteMember(userId: string, organizationId: string) {
 }
 
 /**
+ * Soft delete a member from an organization.
+ * Removes the OrganizationMembership and marks the User as inactive
+ * if they have no other memberships and were created by another user.
+ * @param userId - User ID to soft delete
+ * @param organizationId - Organization ID to remove from
+ */
+export async function softDeleteMember(userId: string, organizationId: string) {
+  return db.$transaction(async (tx) => {
+    // Delete the membership
+    await tx.organizationMembership.delete({
+      where: {
+        userId_organizationId: {
+          userId,
+          organizationId,
+        },
+      },
+    })
+
+    // Check if user has other memberships
+    const otherMemberships = await tx.organizationMembership.findFirst({
+      where: {
+        userId,
+        organizationId: { not: organizationId },
+      },
+    })
+
+    // If no other memberships, soft delete the user
+    if (!otherMemberships) {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { createdById: true },
+      })
+
+      // Soft delete user if they were created by another user (staff member)
+      if (user?.createdById) {
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            isActive: false,
+            deletedAt: new Date(),
+          },
+        })
+      }
+    }
+  })
+}
+
+/**
  * Get all members of an organization with user and membership details.
  * @param organizationId - Organization ID
  * @returns Promise resolving to array of members with user and membership data

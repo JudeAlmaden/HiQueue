@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { loginUser } from "@/server/actions/auth.action"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { Layers } from "lucide-react"
 import type { OrgPortalContext } from "@/lib/portal-theme"
 
@@ -41,7 +40,6 @@ export default function OrgLoginClient({
             <p className="text-[10px] text-on-surface-variant uppercase tracking-wider">Staff Portal</p>
           </div>
         </div>
-        <ThemeToggle />
       </div>
 
       <div className="flex-1 flex items-center justify-center p-6">

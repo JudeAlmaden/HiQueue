@@ -34,6 +34,9 @@ export function QueuesManager({ queues, currentUserRole, organizationId, orgSlug
   const [deletingQueue, setDeletingQueue] = useState<Queue | null>(null)
 
   const isAllowedToManage = currentUserRole === "owner" || currentUserRole === "admin"
+  const QUEUE_LIMIT = 3
+  const queueCount = queues.length
+  const canCreateQueue = queueCount < QUEUE_LIMIT
 
   return (
     <div className="space-y-8">
@@ -44,16 +47,32 @@ export function QueuesManager({ queues, currentUserRole, organizationId, orgSlug
           <p className="text-sm text-on-surface-variant mt-1">
             Create, manage, and configure wait queues for different services.
           </p>
+          {isAllowedToManage && (
+            <p className="text-xs text-on-surface-variant mt-1.5 flex items-center gap-1.5">
+              <span className={`font-semibold ${queueCount >= QUEUE_LIMIT ? "text-error" : "text-primary"}`}>
+                {queueCount} / {QUEUE_LIMIT}
+              </span>
+              <span>queues used</span>
+            </p>
+          )}
         </div>
 
         {isAllowedToManage && (
-          <Button
-            onClick={() => setIsAddOpen(true)}
-            className="flex items-center gap-2 h-10 px-5 rounded-full font-semibold text-sm bg-primary text-on-primary hover:opacity-90 transition-all"
-          >
-            <Plus className="h-4 w-4" />
-            Create Queue
-          </Button>
+          <div className="flex flex-col items-end gap-2">
+            <Button
+              onClick={() => setIsAddOpen(true)}
+              disabled={!canCreateQueue}
+              className="flex items-center gap-2 h-10 px-5 rounded-full font-semibold text-sm bg-primary text-on-primary hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Plus className="h-4 w-4" />
+              Create Queue
+            </Button>
+            {!canCreateQueue && (
+              <span className="text-[10px] text-error font-medium">
+                Queue limit reached
+              </span>
+            )}
+          </div>
         )}
       </div>
 
@@ -114,6 +133,20 @@ export function QueuesManager({ queues, currentUserRole, organizationId, orgSlug
                     </>
                   )}
                 </div>
+
+                {/* Service and Counter counts */}
+                {q._count && (
+                  <div className="flex items-center gap-3 text-[11px] text-on-surface-variant">
+                    <div className="flex items-center gap-1">
+                      <ListOrdered className="h-3 w-3 shrink-0" />
+                      <span><span className="font-semibold text-on-surface">{q._count.services || 0}</span> services</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Settings className="h-3 w-3 shrink-0" />
+                      <span><span className="font-semibold text-on-surface">{q._count.counters || 0}</span> counters</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}

@@ -21,7 +21,10 @@ export default async function OrgQueuesPage({ params }: Props) {
 
   // Verify membership
   const currentMembership = org.memberships.find((m) => m.user.id === userId)
-  if (!currentMembership) notFound()
+  if (!currentMembership) {
+    // User is not a member of this organization, redirect to their own dashboard
+    redirect("/dashboard")
+  }
 
   return (
     <QueuesManager

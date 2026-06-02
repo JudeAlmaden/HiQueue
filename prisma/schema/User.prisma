@@ -9,7 +9,8 @@ model User {
   sessions      Session[]
   Authenticator Authenticator[]
 
-  isActive Boolean @default(true)
+  isActive  Boolean   @default(true)
+  deletedAt DateTime? // Soft delete timestamp
 
   memberships OrganizationMembership[]
   assignedCounters Counter[] @relation("StaffAssignments")

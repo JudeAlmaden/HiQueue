@@ -107,7 +107,15 @@ export async function findOrganizationBySlugWithDetails(slug: string) {
         orderBy: { createdAt: "asc" }
       },
       queues: {
-        include: { counters: true },
+        include: { 
+          counters: true,
+          _count: {
+            select: {
+              services: true,
+              counters: true,
+            }
+          }
+        },
         orderBy: { createdAt: "asc" }
       },
     }

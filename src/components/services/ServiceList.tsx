@@ -37,6 +37,9 @@ export function ServiceList({ services, queueId, currentUserRole, organizationId
   const isOwner = currentUserRole === "owner"
   const canCloseServices = isOwner || currentUserRole === "admin"
   const openCount = services.filter((service) => service.isActive).length
+  const SERVICE_LIMIT = 50
+  const serviceCount = services.length
+  const canCreateService = serviceCount < SERVICE_LIMIT
 
   const handleToggleService = async (service: Service) => {
     if (!isOwner && !service.isActive) {
@@ -78,13 +81,21 @@ export function ServiceList({ services, queueId, currentUserRole, organizationId
         </div>
 
         {isOwner && (
-          <Button
-            onClick={() => setIsAddOpen(true)}
-            className="flex items-center gap-1 h-8 px-3 rounded-full font-bold text-[11px] bg-primary text-on-primary hover:opacity-90 shadow-sm transition-all"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add Service
-          </Button>
+          <div className="flex flex-col items-end gap-1">
+            <Button
+              onClick={() => setIsAddOpen(true)}
+              disabled={!canCreateService}
+              className="flex items-center gap-1 h-8 px-3 rounded-full font-bold text-[11px] bg-primary text-on-primary hover:opacity-90 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add Service
+            </Button>
+            {!canCreateService && (
+              <span className="text-[9px] text-error font-medium">
+                Limit reached
+              </span>
+            )}
+          </div>
         )}
       </div>
 

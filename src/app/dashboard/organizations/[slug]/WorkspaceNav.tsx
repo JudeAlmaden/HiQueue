@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Users, ListOrdered, CalendarRange } from "lucide-react"
+import { LayoutDashboard, Users, ListOrdered, CalendarRange, Palette } from "lucide-react"
 
 interface Props {
   slug: string
@@ -35,6 +35,12 @@ export function WorkspaceNav({ slug }: Props) {
       href: `/dashboard/organizations/${slug}/assignments`,
       icon: CalendarRange,
       active: pathname.startsWith(`/dashboard/organizations/${slug}/assignments`)
+    },
+    {
+      name: "Portal",
+      href: `/dashboard/organizations/${slug}/portal`,
+      icon: Palette,
+      active: pathname.startsWith(`/dashboard/organizations/${slug}/portal`)
     }
   ]
 

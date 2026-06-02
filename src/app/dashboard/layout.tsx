@@ -33,11 +33,16 @@ export default async function DashboardLayout({
     redirect("/onboarding")
   }
 
+  // Load organization's portal theme for custom colors
+  const { getOrgPortalBySlug } = await import("@/server/repositories/portal.repo")
+  const orgPortal = await getOrgPortalBySlug(organization.slug)
+  const customThemeStyle = orgPortal?.theme.cssVars ?? {}
+
   const userEmail = session?.user?.email || "User"
   const userInitials = userEmail.substring(0, 2).toUpperCase()
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground transition-colors duration-200">
+    <div className="flex min-h-screen bg-background text-foreground transition-colors duration-200" style={customThemeStyle}>
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 border-r border-border bg-surface transition-colors duration-200">
         <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">

@@ -66,7 +66,7 @@ export function DeleteMemberDialog({ memberId, memberName, organizationId, orgSl
         {error && <FormError message={error} />}
 
         <div className="rounded-xl bg-surface-low p-3.5 border border-border/40 text-[11px] text-on-surface-variant leading-relaxed">
-          <span className="font-semibold text-on-surface">Note:</span> If this user does not belong to any other organizations, their global HiQueue account may also be deactivated.
+          <span className="font-semibold text-on-surface">Warning:</span> The member will be removed from this workspace and their account will be deactivated (soft delete). If they are assigned to any counters, you must unassign them first before removal.
         </div>
 
         {/* Buttons */}

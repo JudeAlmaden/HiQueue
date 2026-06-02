@@ -337,6 +337,12 @@
   --ring: #ffff00;
 }
 
+/* ─── Custom Theme (Uses CSS Variables) ────────────────────── */
+.theme-custom {
+  /* Custom theme uses only the CSS variables set via customization
+     No predefined colors - all colors come from cssVars */
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

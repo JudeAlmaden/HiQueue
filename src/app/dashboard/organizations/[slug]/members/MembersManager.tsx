@@ -69,6 +69,18 @@ export function MembersManager({ memberships, currentUserId, currentUserRole, or
     return counts
   }, {})
 
+  // Member limits
+  const MEMBER_LIMITS = {
+    staff: 25,
+    admin: 5,
+    total: 30,
+  }
+
+  const totalCount = memberships.length
+  const staffCount = roleCounts.staff || 0
+  const adminCount = roleCounts.admin || 0
+  const canAddMember = totalCount < MEMBER_LIMITS.total
+
   return (
     <div className="space-y-6">
       {/* Action Header */}
@@ -78,16 +90,42 @@ export function MembersManager({ memberships, currentUserId, currentUserRole, or
           <p className="text-xs text-on-surface-variant">
             Manage who has access to this workspace and their permission levels.
           </p>
+          {isAllowedToManage && (
+            <p className="text-xs text-on-surface-variant mt-1.5 flex items-center gap-1.5">
+              <span className={`font-semibold ${totalCount >= MEMBER_LIMITS.total ? "text-error" : "text-primary"}`}>
+                {totalCount} / {MEMBER_LIMITS.total}
+              </span>
+              <span>total members</span>
+              <span className="text-on-surface-variant/40">•</span>
+              <span className={`font-semibold ${staffCount >= MEMBER_LIMITS.staff ? "text-error" : "text-on-surface"}`}>
+                {staffCount} / {MEMBER_LIMITS.staff}
+              </span>
+              <span>staff</span>
+              <span className="text-on-surface-variant/40">•</span>
+              <span className={`font-semibold ${adminCount >= MEMBER_LIMITS.admin ? "text-error" : "text-on-surface"}`}>
+                {adminCount} / {MEMBER_LIMITS.admin}
+              </span>
+              <span>admins</span>
+            </p>
+          )}
         </div>
 
         {isAllowedToManage && (
-          <Button
-            onClick={() => setIsAddOpen(true)}
-            className="flex items-center gap-1.5 h-10 px-5 rounded-full font-bold text-xs bg-primary text-on-primary hover:opacity-90 shadow-sm transition-all"
-          >
-            <Plus className="h-4 w-4" />
-            Add Member
-          </Button>
+          <div className="flex flex-col items-end gap-2">
+            <Button
+              onClick={() => setIsAddOpen(true)}
+              disabled={!canAddMember}
+              className="flex items-center gap-1.5 h-10 px-5 rounded-full font-bold text-xs bg-primary text-on-primary hover:opacity-90 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Plus className="h-4 w-4" />
+              Add Member
+            </Button>
+            {!canAddMember && (
+              <span className="text-[10px] text-error font-medium">
+                Member limit reached
+              </span>
+            )}
+          </div>
         )}
       </div>
 

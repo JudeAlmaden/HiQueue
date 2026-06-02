@@ -8,10 +8,18 @@ import { db } from "@/server/lib/db"
  * Validates permissions and enforces business rules before calling repository.
  */
 
+// Member limits per organization
+const MEMBER_LIMITS = {
+  staff: 25,    // Soft limit for staff members (enforced)
+  admin: 5,     // Hard limit for admin members
+  total: 30,    // Hard limit for total members
+}
+
 /**
  * Create a new member in an organization.
  * Validates that the user has owner role.
  * Checks for duplicate email in the organization.
+ * Enforces member limits per organization.
  * @param input - Member creation data
  * @param userId - ID of the user creating the member
  * @returns ActionResult with created user or error message
@@ -42,6 +50,28 @@ export async function createMember(
     const existingUser = await memberRepo.findUserWithMembershipByEmail(input.email)
     if (existingUser?.memberships.length) {
       return fail("This user already belongs to an organization")
+    }
+
+    // Check member limits
+    const currentMembers = await memberRepo.getOrganizationMembers(input.organizationId)
+    const totalCount = currentMembers.length
+    const roleCounts = currentMembers.reduce<Record<string, number>>((acc, m) => {
+      acc[m.membership.role] = (acc[m.membership.role] || 0) + 1
+      return acc
+    }, {})
+
+    // Check total limit
+    if (totalCount >= MEMBER_LIMITS.total) {
+      return fail(`Member limit reached. You can have up to ${MEMBER_LIMITS.total} members per organization.`)
+    }
+
+    // Check role-specific limits
+    if (input.role === "staff" && (roleCounts.staff || 0) >= MEMBER_LIMITS.staff) {
+      return fail(`Staff member limit reached. You can have up to ${MEMBER_LIMITS.staff} staff members.`)
+    }
+
+    if (input.role === "admin" && (roleCounts.admin || 0) >= MEMBER_LIMITS.admin) {
+      return fail(`Admin limit reached. You can have up to ${MEMBER_LIMITS.admin} admins.`)
     }
 
     // Create the member
@@ -131,8 +161,10 @@ export async function updateMember(
 }
 
 /**
- * Delete a member from an organization.
+ * Delete a member from an organization (soft delete with association check).
  * Validates that the user has owner role.
+ * Checks for counter assignments before deletion.
+ * Implements soft delete instead of hard delete.
  * @param input - Member deletion data
  * @param userId - ID of the user performing the deletion
  * @returns ActionResult with success or error message
@@ -175,8 +207,27 @@ export async function deleteMember(
       return fail("Organization owners cannot be removed from member management.")
     }
 
-    // Delete the member
-    await memberRepo.deleteMember(input.id, input.organizationId)
+    // Check for counter assignments (association check)
+    const counterAssignments = await db.counter.count({
+      where: {
+        assignedStaff: {
+          some: {
+            id: input.id,
+          },
+        },
+      },
+    })
+
+    if (counterAssignments > 0) {
+      return fail(
+        `Cannot remove member. They are assigned to ${counterAssignments} counter${
+          counterAssignments > 1 ? "s" : ""
+        }. Please unassign them first.`
+      )
+    }
+
+    // Soft delete: Remove membership and mark user as inactive if no other memberships
+    await memberRepo.softDeleteMember(input.id, input.organizationId)
 
     return ok(undefined)
   } catch (error: any) {

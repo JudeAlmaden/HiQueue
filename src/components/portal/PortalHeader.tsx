@@ -1,6 +1,5 @@
 import Link from "next/link"
 import { Layers, Monitor, Tag, Users } from "lucide-react"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { UserMenu } from "@/components/portal/UserMenu"
 import type { OrgPortalContext } from "@/lib/portal-theme"
 
@@ -69,9 +68,8 @@ export function PortalHeader({
           </nav>
         </div>
 
-        {/* Right: theme + user */}
+        {/* Right: user menu */}
         <div className="flex items-center gap-2 shrink-0">
-          <ThemeToggle />
           <UserMenu
             role={role ?? "staff"}
             userName={userName}

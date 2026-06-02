@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation"
 import { getOrgPortalBySlug } from "@/server/repositories/portal.repo"
-import { portalThemeToStyle } from "@/lib/portal-theme"
 
 interface Props {
   children: React.ReactNode
@@ -14,7 +13,7 @@ export default async function OrgPortalRootLayout({ children, params }: Props) {
   if (!org) notFound()
 
   const themeClass = org.theme.themeClass ?? ""
-  const themeStyle = portalThemeToStyle(org.theme)
+  const themeStyle = org.theme.cssVars ?? {}
 
   return (
     <div

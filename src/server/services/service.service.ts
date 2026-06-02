@@ -29,10 +29,21 @@ export async function createService(
     // Verify queue belongs to organization
     const queue = await db.queue.findUnique({
       where: { id: input.queueId },
+      include: {
+        _count: {
+          select: { services: true }
+        }
+      }
     })
 
     if (!queue || queue.organizationId !== organizationId) {
       return fail("Queue not found or does not belong to your organization")
+    }
+
+    // Check service limit per queue (max 50 services)
+    const SERVICE_LIMIT = 50
+    if (queue._count.services >= SERVICE_LIMIT) {
+      return fail(`Service limit reached. You can create up to ${SERVICE_LIMIT} services per queue.`)
     }
 
     // Check duplicate name in same queue

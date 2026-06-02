@@ -36,6 +36,12 @@ export async function createQueue(
       return fail("A queue with this name already exists in the organization")
     }
 
+    // Check queue limit per organization (max 3 queues)
+    const QUEUE_LIMIT = 3
+    if (existingQueues.length >= QUEUE_LIMIT) {
+      return fail(`Queue limit reached. You can create up to ${QUEUE_LIMIT} queues per organization.`)
+    }
+
     const queue = await queueRepo.createQueue({
       name: input.name,
       description: input.description,

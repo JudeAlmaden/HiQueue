@@ -44,7 +44,10 @@ export default async function OrgDetailPage({
 
   // Ensure the current user is actually a member
   const currentMembership = org.memberships.find((m) => m.user.id === userId)
-  if (!currentMembership) notFound()
+  if (!currentMembership) {
+    // User is not a member of this organization, redirect to their own dashboard
+    redirect("/dashboard")
+  }
 
   const memberCount = org.memberships.length
   const queueCount = org.queues.length
