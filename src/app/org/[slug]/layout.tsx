@@ -13,7 +13,9 @@ export default async function OrgPortalRootLayout({ children, params }: Props) {
   if (!org) notFound()
 
   const themeClass = org.theme.themeClass ?? ""
-  const themeStyle = org.theme.cssVars ?? {}
+  // Only apply custom CSS variables if they exist AND we're using theme-custom
+  const shouldApplyCustomVars = themeClass === "theme-custom" && org.theme.cssVars
+  const themeStyle = shouldApplyCustomVars ? org.theme.cssVars : {}
 
   return (
     <div

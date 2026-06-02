@@ -84,10 +84,12 @@ export function ThemeSelector({ currentTheme, onChange }: ThemeSelectorProps) {
   const cssVars = currentTheme.cssVars || {}
 
   const handleThemeSelect = (themeOption: ThemeOption) => {
+    // Clear custom CSS vars when selecting a preset theme (not custom)
+    const shouldClearVars = themeOption.id !== "custom"
+    
     onChange({
       themeClass: themeOption.themeClass || undefined,
-      // Preserve existing custom CSS vars when switching themes
-      cssVars: currentTheme.cssVars,
+      cssVars: shouldClearVars ? undefined : currentTheme.cssVars,
     })
   }
 
