@@ -497,11 +497,18 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 12px; /* Very compact UI - 75% of default 16px */
+  }
+  
+  /* Reset font size to normal for live display screens (meant for large monitors/TVs) */
+  html:has([data-display-screen="true"]) {
+    font-size: 16px;
+  }
+  
   body {
     @apply bg-background text-foreground;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-  }
-  html {
     font-family: 'Plus Jakarta Sans', sans-serif;
   }
 }

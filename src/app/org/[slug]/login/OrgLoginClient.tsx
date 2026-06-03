@@ -71,12 +71,23 @@ export default function OrgLoginClient({
   const showTopBar = !isMinimal
   const fontColor = loginControls?.fontColor
   const sharpness = loginControls?.sharpness
+  const splitLeftPanelBgImage = loginControls?.splitLeftPanelBgImage
   const splitRightPanelBg = loginControls?.splitRightPanelBg
 
   const themeClass = org.theme.themeClass ?? ""
   const modeClass = themeClass !== "theme-custom" && org.theme.mode === "dark" ? "dark" : ""
   const shouldApplyCustomVars = themeClass === "theme-custom" && org.theme.cssVars
   const themeStyle = shouldApplyCustomVars ? org.theme.cssVars : {}
+
+  // Extract opacity from pageBg for image opacity
+  const pageBgOpacity = loginControls?.pageBg && loginControls.pageBg.length === 9
+    ? parseInt(loginControls.pageBg.substring(7, 9), 16) / 255
+    : 1
+
+  // Build background image with opacity overlay
+  const backgroundImageStyle = loginControls?.pageBgImage
+    ? `linear-gradient(rgba(0,0,0,${1 - pageBgOpacity}), rgba(0,0,0,${1 - pageBgOpacity})), url(${loginControls.pageBgImage})`
+    : undefined
 
   return (
     <div 
@@ -85,8 +96,8 @@ export default function OrgLoginClient({
       className={`min-h-screen flex flex-col overflow-x-hidden bg-background text-foreground transition-colors duration-200 ${themeClass} ${modeClass}`}
       style={{
         ...themeStyle,
-        backgroundColor: loginControls?.pageBg,
-        backgroundImage: loginControls?.pageBgImage ? `url(${loginControls.pageBgImage})` : undefined,
+        backgroundColor: loginControls?.pageBg?.substring(0, 7),
+        backgroundImage: backgroundImageStyle,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -115,6 +126,10 @@ export default function OrgLoginClient({
           transformOrigin: "top center",
           ...({
             "--login-radius": sharpness !== undefined ? `${sharpness}px` : undefined,
+            "--login-split-left-bg-image": splitLeftPanelBgImage 
+              ? `url(${splitLeftPanelBgImage})`
+              : undefined,
+            "--login-split-left-bg": loginControls?.splitLeftPanelBg,
             "--login-split-right-bg": splitRightPanelBg,
           } as React.CSSProperties),
         }}

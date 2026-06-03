@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type {
   OrgPortalContext,
   PortalTheme,
@@ -17,6 +17,8 @@ import { Save, RotateCcw, X } from "lucide-react"
 import { toast } from "sonner"
 import { updatePortalTheme, updatePortalBranding } from "@/server/actions/portal.actions"
 import { useRouter } from "next/navigation"
+import { LayoutDesignControls } from "./customizers/LayoutDesignControls"
+import { LoginLayoutCustomizer } from "./customizers/LoginLayoutCustomizer"
 
 interface PortalCustomizerProps {
   orgPortal: OrgPortalContext
@@ -162,36 +164,59 @@ function LayoutMockPreview({
     if (option === "standard") {
       return (
         <div className={frame}>
-          <div className="space-y-2">
-            {topBar}
-            <div className="grid h-16 grid-cols-3 gap-1.5">
-              <div className="col-span-2 rounded border border-border bg-card p-1.5">
-                <div className="h-1.5 w-1/4 rounded bg-muted/80 mb-1" />
-                <div className="h-10 rounded bg-muted/45" />
+          <div className="space-y-1.5">
+            {/* Header with org name and clock */}
+            <div className="flex items-center justify-between px-1">
+              <div className="h-2 w-12 rounded bg-muted/80" />
+              <div className="h-2 w-10 rounded bg-muted/60" />
+            </div>
+            {/* Main content grid */}
+            <div className="grid h-16 grid-cols-[2fr_1fr] gap-1.5">
+              {/* Now Serving - Left side */}
+              <div className="rounded border border-border bg-card p-1.5 flex flex-col items-center justify-center space-y-1">
+                <div className="h-1.5 w-16 rounded bg-primary/40 mb-0.5" />
+                <div className="w-8 h-8 rounded-full border-2 border-muted/40 flex items-center justify-center">
+                  <div className="h-1 w-1 rounded-full bg-muted/60" />
+                </div>
+                <div className="h-1 w-12 rounded bg-muted/50" />
               </div>
-              <div className="space-y-1">
-                <div className="h-7 rounded border border-border bg-card p-1" />
-                <div className="h-8 rounded border border-border bg-card p-1" />
+              {/* Waiting Queue - Right sidebar */}
+              <div className="rounded border border-border bg-card/80 p-1.5 space-y-0.5">
+                <div className="h-1.5 w-12 rounded bg-muted/70 mb-1" />
+                <div className="h-2.5 rounded bg-muted/40" />
+                <div className="h-2.5 rounded bg-muted/40" />
+                <div className="h-2.5 rounded bg-muted/40" />
               </div>
+            </div>
+            {/* Footer */}
+            <div className="flex items-center justify-between px-1">
+              <div className="h-1 w-16 rounded bg-primary/30" />
+              <div className="h-1 w-12 rounded bg-muted/50" />
             </div>
           </div>
         </div>
       )
     }
-    if (option === "ads") {
+    if (option === "no-waiting") {
       return (
         <div className={frame}>
-          <div className="space-y-2">
-            {topBar}
-            <div className="grid h-16 grid-cols-3 gap-1.5">
-              <div className="col-span-2 rounded border border-border bg-card p-1.5">
-                <div className="h-1.5 w-1/4 rounded bg-muted/80 mb-1" />
-                <div className="h-10 rounded bg-muted/45" />
+          <div className="space-y-1.5">
+            {/* Header with org name and clock */}
+            <div className="flex items-center justify-between px-1">
+              <div className="h-2 w-12 rounded bg-muted/80" />
+              <div className="h-2 w-10 rounded bg-muted/60" />
+            </div>
+            {/* Full width Now Serving only */}
+            <div className="h-16 rounded border border-border bg-card p-2 flex flex-col items-center justify-center space-y-1.5">
+              <div className="h-2 w-20 rounded bg-primary/40" />
+              <div className="w-10 h-10 rounded-full border-2 border-muted/40 flex items-center justify-center">
+                <div className="h-1.5 w-1.5 rounded-full bg-muted/60" />
               </div>
-              <div className="rounded border border-border bg-primary/10 p-1.5 space-y-1">
-                <div className="h-1.5 w-2/3 rounded bg-primary/35" />
-                <div className="h-7 rounded bg-muted/40" />
-              </div>
+              <div className="h-1.5 w-16 rounded bg-muted/50" />
+            </div>
+            {/* Footer */}
+            <div className="flex items-center justify-center px-1">
+              <div className="h-1 w-16 rounded bg-primary/30" />
             </div>
           </div>
         </div>
@@ -300,6 +325,50 @@ export function PortalCustomizer({ orgPortal, sampleQueueId }: PortalCustomizerP
   const [activeTab, setActiveTab] = useState<CustomizerTab>("theme")
   const [layoutCustomizeSection, setLayoutCustomizeSection] = useState<keyof PortalLayoutSettings | null>(null)
   const [layoutPreviewOption, setLayoutPreviewOption] = useState<string | null>(null)
+  const [previewZoom, setPreviewZoom] = useState<number>(0.5)
+
+  // Read tab from URL on mount (client-side only)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const tab = params.get("tab")
+    if (tab === "theme" || tab === "branding" || tab === "layout") {
+      setActiveTab(tab as CustomizerTab)
+    }
+  }, [])
+
+  // Update URL when tab changes
+  const handleTabChange = (newTab: CustomizerTab) => {
+    setActiveTab(newTab)
+    const url = new URL(window.location.href)
+    url.searchParams.set("tab", newTab)
+    window.history.replaceState({}, "", url.toString())
+  }
+
+  // Keyboard shortcuts for modal
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (layoutCustomizeSection) {
+      if (e.key === "Escape") {
+        setLayoutCustomizeSection(null)
+      } else if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault()
+        if (hasChanges && !isSaving) {
+          handleSave()
+        }
+      }
+    }
+  }
+
+  // Attach keyboard listener
+  if (typeof window !== "undefined") {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const { useEffect } = require("react")
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      window.addEventListener("keydown", handleKeyDown)
+      return () => window.removeEventListener("keydown", handleKeyDown)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [layoutCustomizeSection, hasChanges, isSaving])
+  }
 
   const handleThemeChange = (newTheme: PortalTheme) => {
     setTheme(newTheme)
@@ -327,7 +396,7 @@ export function PortalCustomizer({ orgPortal, sampleQueueId }: PortalCustomizerP
 
   const handleLayoutControlChange = (
     section: keyof PortalLayoutControlSettings,
-    key: "splitRightPanelBg" | "pageBg" | "pageBgImage" | "useThemeDefault" | "typographyScale" | "fontColor" | "sharpness",
+    key: "splitLeftPanelBgImage" | "splitRightPanelBg" | "pageBg" | "pageBgImage" | "typographyScale" | "fontColor" | "sharpness",
     value: string | number | boolean
   ) => {
     setTheme((prev) => ({
@@ -411,11 +480,11 @@ export function PortalCustomizer({ orgPortal, sampleQueueId }: PortalCustomizerP
       label: "Live Display",
       value: theme.layout?.liveDisplay ?? "standard",
       options: [
-        { key: "standard" as const, title: "Standard", description: "Now-serving board with waiting column." },
+        { key: "standard" as const, title: "Standard", description: "Now-serving center with waiting queue sidebar." },
         {
           key: "no-waiting" as const,
           title: "Focus",
-          description: "Now-serving only, optimized for distance.",
+          description: "Full-screen now-serving, no waiting list shown.",
         },
       ],
     },
@@ -450,10 +519,10 @@ export function PortalCustomizer({ orgPortal, sampleQueueId }: PortalCustomizerP
   const activeControls =
     layoutCustomizeSection && theme.layoutControls
       ? (theme.layoutControls[layoutCustomizeSection] as {
+          splitLeftPanelBgImage?: string
           splitRightPanelBg?: string
           pageBg?: string
           pageBgImage?: string
-          useThemeDefault?: boolean
           typographyScale?: number
           fontColor?: string
           sharpness?: number
@@ -496,7 +565,7 @@ export function PortalCustomizer({ orgPortal, sampleQueueId }: PortalCustomizerP
       </Card>
 
       {/* Customization Tabs */}
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as CustomizerTab)} className="w-full">
+      <Tabs value={activeTab} onValueChange={(value) => handleTabChange(value as CustomizerTab)} className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="theme">Theme</TabsTrigger>
           <TabsTrigger value="branding">Branding</TabsTrigger>
@@ -730,348 +799,169 @@ export function PortalCustomizer({ orgPortal, sampleQueueId }: PortalCustomizerP
       )}
 
       {layoutCustomizeSection && activeLayoutSection && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
           <button
             type="button"
             aria-label="Close layout customize modal"
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setLayoutCustomizeSection(null)}
           />
-          <div className="relative z-10 w-full max-w-[96vw] xl:max-w-[1600px] h-[95vh] flex flex-col rounded-xl border border-border bg-surface shadow-2xl">
-            <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 flex-shrink-0">
-              <div>
-                <h3 className="text-sm font-semibold text-on-surface">{activeLayoutSection.label} Customization</h3>
-                <p className="text-xs text-on-surface-variant">
-                  Preview and apply layout instantly. Save when you are satisfied.
-                </p>
+          <div className="relative z-10 w-full max-w-7xl h-[96vh] flex flex-col rounded-2xl border border-border bg-surface shadow-2xl overflow-hidden">
+            {/* Compact Header */}
+            <div className="flex items-center justify-between border-b border-border bg-surface/95 backdrop-blur px-6 py-3 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <h3 className="text-base font-semibold text-on-surface">{activeLayoutSection.label}</h3>
+                <span className="text-xs text-on-surface-variant">• {previewOption?.title}</span>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setLayoutCustomizeSection(null)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={!hasChanges || isSaving}
+                >
+                  <Save className="h-4 w-4 mr-1.5" />
+                  {isSaving ? "Saving..." : "Save"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setLayoutCustomizeSection(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 xl:p-8 min-w-0">
-              <div className="rounded-xl border border-border bg-card p-4 md:p-5 min-w-0">
-                <div className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-2">Live Preview</div>
-                {previewOption ? (
-                  <>
-                    <div className="text-sm font-semibold text-on-surface">{previewOption.title}</div>
-                    <p className="text-xs text-on-surface-variant mt-1">{previewOption.description}</p>
-                    <div className="mt-4 rounded-lg border border-border bg-muted/20 overflow-hidden">
+            {/* Main Content - Side by Side */}
+            <div className="flex-1 flex min-h-0">
+              {/* Controls Panel - Left Sidebar (Narrower) */}
+              <div className="w-72 border-r border-border bg-card flex flex-col">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-3">
+                      Quick Colors
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleLayoutControlChange(activeLayoutSection.key, "pageBg", theme.cssVars?.["--primary"] || "#4a654e")}
+                        className="h-12 flex-1 rounded-lg border-2 border-border hover:border-primary transition-all hover:scale-105"
+                        style={{ backgroundColor: theme.cssVars?.["--primary"] || "#4a654e" }}
+                        title="Primary"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleLayoutControlChange(activeLayoutSection.key, "pageBg", theme.cssVars?.["--secondary"] || "#586249")}
+                        className="h-12 flex-1 rounded-lg border-2 border-border hover:border-primary transition-all hover:scale-105"
+                        style={{ backgroundColor: theme.cssVars?.["--secondary"] || "#586249" }}
+                        title="Secondary"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleLayoutControlChange(activeLayoutSection.key, "pageBg", theme.cssVars?.["--background"] || "#faf9f6")}
+                        className="h-12 flex-1 rounded-lg border-2 border-border hover:border-primary transition-all hover:scale-105"
+                        style={{ backgroundColor: theme.cssVars?.["--background"] || "#faf9f6" }}
+                        title="Light"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border pt-4">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-3">
+                      Customize
+                    </div>
+                    <LayoutDesignControls
+                      layoutKey={activeLayoutSection.key}
+                      layoutType={previewOption?.key}
+                      previewOptionKey={previewOption?.key}
+                      activeControls={activeControls}
+                      onControlChange={(key, value) =>
+                        handleLayoutControlChange(activeLayoutSection.key, key as any, value)
+                      }
+                    />
+                    {activeLayoutSection.key === "login" && previewOption?.key === "split" && (
+                      <div className="mt-3">
+                        <LoginLayoutCustomizer
+                          previewOptionKey={previewOption?.key}
+                          activeControls={activeControls}
+                          onControlChange={(key, value) =>
+                            handleLayoutControlChange(activeLayoutSection.key, key as any, value)
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Preview Panel - Main Area */}
+              <div className="flex-1 flex flex-col bg-muted/30 min-w-0">
+                {/* Zoom Controls */}
+                <div className="flex items-center justify-center gap-2 py-2 px-4 border-b border-border bg-card/50">
+                  <span className="text-xs text-on-surface-variant">Zoom:</span>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewZoom(Math.max(0.5, previewZoom - 0.1))}
+                    className="h-7 w-7 rounded-md border border-border hover:bg-surface-container transition-colors flex items-center justify-center text-sm"
+                  >
+                    −
+                  </button>
+                  <span className="text-xs font-mono text-on-surface min-w-[3rem] text-center">
+                    {Math.round(previewZoom * 100)}%
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewZoom(Math.min(1.5, previewZoom + 0.1))}
+                    className="h-7 w-7 rounded-md border border-border hover:bg-surface-container transition-colors flex items-center justify-center text-sm"
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewZoom(1)}
+                    className="h-7 px-3 rounded-md border border-border hover:bg-surface-container transition-colors text-xs"
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                <div className="flex-1 p-6 overflow-auto flex items-center justify-center">
+                  <div style={{
+                    width: `${100 / previewZoom}%`,
+                    height: `${100 / previewZoom}%`,
+                    transform: `scale(${previewZoom})`,
+                    transformOrigin: 'center center',
+                  }}>
+                    <div 
+                      className="rounded-xl border-2 border-border bg-white shadow-2xl overflow-hidden"
+                      style={{
+                        width: '100%',
+                        maxWidth: '1440px',
+                        height: '700px',
+                        aspectRatio: '16 / 9',
+                        margin: '0 auto',
+                      }}
+                    >
                       {previewUrl ? (
                         <iframe
                           title={`${activeLayoutSection.label} preview`}
                           src={previewUrl}
-                          className="w-full bg-white"
-                          style={{ height: 'calc(95vh - 400px)', minHeight: '450px' }}
+                          className="w-full h-full bg-white"
                         />
                       ) : (
-                        <div className="p-6 text-sm text-on-surface-variant">
-                          Create at least one queue to preview ticketing, display, and track layouts.
+                        <div className="h-full flex items-center justify-center text-sm text-on-surface-variant">
+                          Create at least one queue to preview layouts.
                         </div>
                       )}
                     </div>
-                  </>
-                ) : null}
-                <p className="mt-4 text-xs text-on-surface-variant">
-                  This preview updates immediately as you switch variants. Save once you are happy.
-                </p>
-
-                <div className="mt-5 pt-4 border-t border-border">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant">
-                      Design Controls
-                    </div>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={activeControls?.useThemeDefault ?? false}
-                        onChange={(event) =>
-                          handleLayoutControlChange(
-                            activeLayoutSection.key,
-                            "useThemeDefault",
-                            event.target.checked
-                          )
-                        }
-                        className="h-4 w-4 rounded border-border"
-                      />
-                      <span className="text-xs font-medium text-on-surface">Use Theme Default</span>
-                    </label>
                   </div>
-
-                  {!activeControls?.useThemeDefault && (
-                    <div className="space-y-4">
-                      {/* Typography & Colors Section */}
-                      <div className="rounded-lg border border-border bg-surface-container/30 p-3 space-y-3">
-                        <div className="text-xs font-semibold text-on-surface">Typography & Colors</div>
-                        
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1.5">
-                            <label className="text-xs text-on-surface-variant">Font Size</label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="range"
-                                min={0.85}
-                                max={1.25}
-                                step={0.01}
-                                value={activeControls?.typographyScale ?? 1}
-                                onChange={(event) =>
-                                  handleLayoutControlChange(
-                                    activeLayoutSection.key,
-                                    "typographyScale",
-                                    Number(event.target.value)
-                                  )
-                                }
-                                className="flex-1"
-                              />
-                              <span className="text-xs font-mono text-muted-foreground w-10 text-right">
-                                {((activeControls?.typographyScale ?? 1) * 100).toFixed(0)}%
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <label className="text-xs text-on-surface-variant">Font Color</label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="color"
-                                value={(activeControls?.fontColor ?? "#1f2937").substring(0, 7)}
-                                onChange={(event) => {
-                                  const hex = event.target.value
-                                  const currentAlpha = (activeControls?.fontColor ?? "#1f2937").length === 9 
-                                    ? (activeControls?.fontColor ?? "#1f2937").substring(7) 
-                                    : "ff"
-                                  handleLayoutControlChange(activeLayoutSection.key, "fontColor", hex + currentAlpha)
-                                }}
-                                className="h-8 w-12 rounded border border-border cursor-pointer"
-                              />
-                              <input
-                                type="text"
-                                value={activeControls?.fontColor ?? "#1f2937"}
-                                onChange={(event) =>
-                                  handleLayoutControlChange(activeLayoutSection.key, "fontColor", event.target.value)
-                                }
-                                placeholder="#1f2937ff"
-                                className="h-8 flex-1 px-2 text-xs font-mono rounded border border-border bg-background"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Background Section */}
-                      <div className="rounded-lg border border-border bg-surface-container/30 p-3 space-y-3">
-                        <div className="text-xs font-semibold text-on-surface">Background</div>
-                        
-                        <div className="space-y-3">
-                          <div className="space-y-1.5">
-                            <label className="text-xs text-on-surface-variant">Background Color</label>
-                            <div className="flex items-center gap-2">
-                              <div className="relative">
-                                <input
-                                  type="color"
-                                  value={(activeControls?.pageBg ?? "#f5f5f4").substring(0, 7)}
-                                  onChange={(event) => {
-                                    const hex = event.target.value
-                                    const currentAlpha = (activeControls?.pageBg ?? "#f5f5f4").length === 9 
-                                      ? (activeControls?.pageBg ?? "#f5f5f4").substring(7) 
-                                      : "ff"
-                                    handleLayoutControlChange(activeLayoutSection.key, "pageBg", hex + currentAlpha)
-                                  }}
-                                  className="h-8 w-16 rounded border border-border cursor-pointer"
-                                />
-                              </div>
-                              <input
-                                type="text"
-                                value={activeControls?.pageBg ?? "#f5f5f4"}
-                                onChange={(event) =>
-                                  handleLayoutControlChange(activeLayoutSection.key, "pageBg", event.target.value)
-                                }
-                                placeholder="#f5f5f4 or #f5f5f4ff"
-                                className="h-8 flex-1 px-2 text-xs font-mono rounded border border-border bg-background"
-                              />
-                              <div className="flex items-center gap-1">
-                                <input
-                                  type="range"
-                                  min={0}
-                                  max={100}
-                                  value={
-                                    (activeControls?.pageBg ?? "#f5f5f4").length === 9
-                                      ? Math.round((parseInt((activeControls?.pageBg ?? "#f5f5f4").substring(7), 16) / 255) * 100)
-                                      : 100
-                                  }
-                                  onChange={(event) => {
-                                    const hex = (activeControls?.pageBg ?? "#f5f5f4").substring(0, 7)
-                                    const alpha = Math.round((Number(event.target.value) / 100) * 255).toString(16).padStart(2, "0")
-                                    handleLayoutControlChange(activeLayoutSection.key, "pageBg", hex + alpha)
-                                  }}
-                                  className="w-20"
-                                  title="Opacity"
-                                />
-                                <span className="text-xs font-mono text-muted-foreground w-8 text-right">
-                                  {(activeControls?.pageBg ?? "#f5f5f4").length === 9
-                                    ? Math.round((parseInt((activeControls?.pageBg ?? "#f5f5f4").substring(7), 16) / 255) * 100)
-                                    : 100}%
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <label className="text-xs text-on-surface-variant">Background Image</label>
-                            <div className="space-y-2">
-                              <div className="flex items-stretch gap-2">
-                                <input
-                                  type="text"
-                                  value={activeControls?.pageBgImage ?? ""}
-                                  onChange={(event) =>
-                                    handleLayoutControlChange(activeLayoutSection.key, "pageBgImage", event.target.value)
-                                  }
-                                  placeholder="https://example.com/image.jpg"
-                                  className="h-8 flex-1 px-2 text-xs rounded border border-border bg-background"
-                                />
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-8 px-3"
-                                  onClick={() => {
-                                    toast.info("Background image upload coming soon")
-                                  }}
-                                >
-                                  Upload
-                                </Button>
-                              </div>
-                              {activeControls?.pageBgImage && (
-                                <div className="rounded border border-border bg-muted/20 p-2 relative overflow-hidden h-24">
-                                  <img 
-                                    src={activeControls.pageBgImage} 
-                                    alt="Background preview" 
-                                    className="w-full h-full object-cover rounded"
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none'
-                                      e.currentTarget.parentElement!.innerHTML = '<div class="flex items-center justify-center h-full text-xs text-muted-foreground">Invalid image URL</div>'
-                                    }}
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Shape & Layout Section */}
-                      <div className="rounded-lg border border-border bg-surface-container/30 p-3 space-y-3">
-                        <div className="text-xs font-semibold text-on-surface">Shape & Layout</div>
-                        
-                        <div className="space-y-1.5">
-                          <label className="text-xs text-on-surface-variant">Border Radius</label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="range"
-                              min={0}
-                              max={24}
-                              step={1}
-                              value={activeControls?.sharpness ?? 12}
-                              onChange={(event) =>
-                                handleLayoutControlChange(activeLayoutSection.key, "sharpness", Number(event.target.value))
-                              }
-                              className="flex-1"
-                            />
-                            <span className="text-xs font-mono text-muted-foreground w-10 text-right">
-                              {activeControls?.sharpness ?? 12}px
-                            </span>
-                          </div>
-                        </div>
-
-                        {activeLayoutSection.key === "login" && (
-                          <div className="space-y-1.5">
-                            <label className="text-xs text-on-surface-variant">Split Panel Background</label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="color"
-                                value={(activeControls?.splitRightPanelBg ?? "#f0fdf4").substring(0, 7)}
-                                onChange={(event) => {
-                                  const hex = event.target.value
-                                  const currentAlpha = (activeControls?.splitRightPanelBg ?? "#f0fdf4").length === 9 
-                                    ? (activeControls?.splitRightPanelBg ?? "#f0fdf4").substring(7) 
-                                    : "ff"
-                                  handleLayoutControlChange(activeLayoutSection.key, "splitRightPanelBg", hex + currentAlpha)
-                                }}
-                                className="h-8 w-16 rounded border border-border cursor-pointer"
-                              />
-                              <input
-                                type="text"
-                                value={activeControls?.splitRightPanelBg ?? "#f0fdf4"}
-                                onChange={(event) =>
-                                  handleLayoutControlChange(activeLayoutSection.key, "splitRightPanelBg", event.target.value)
-                                }
-                                placeholder="#f0fdf4ff"
-                                className="h-8 flex-1 px-2 text-xs font-mono rounded border border-border bg-background"
-                              />
-                              <div className="flex items-center gap-1">
-                                <input
-                                  type="range"
-                                  min={0}
-                                  max={100}
-                                  value={
-                                    (activeControls?.splitRightPanelBg ?? "#f0fdf4").length === 9
-                                      ? Math.round((parseInt((activeControls?.splitRightPanelBg ?? "#f0fdf4").substring(7), 16) / 255) * 100)
-                                      : 100
-                                  }
-                                  onChange={(event) => {
-                                    const hex = (activeControls?.splitRightPanelBg ?? "#f0fdf4").substring(0, 7)
-                                    const alpha = Math.round((Number(event.target.value) / 100) * 255).toString(16).padStart(2, "0")
-                                    handleLayoutControlChange(activeLayoutSection.key, "splitRightPanelBg", hex + alpha)
-                                  }}
-                                  className="w-16"
-                                  title="Opacity"
-                                />
-                                <span className="text-xs font-mono text-muted-foreground w-8 text-right">
-                                  {(activeControls?.splitRightPanelBg ?? "#f0fdf4").length === 9
-                                    ? Math.round((parseInt((activeControls?.splitRightPanelBg ?? "#f0fdf4").substring(7), 16) / 255) * 100)
-                                    : 100}%
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {activeControls?.useThemeDefault && (
-                    <div className="rounded-lg border border-muted bg-muted/20 p-4 text-center">
-                      <p className="text-sm text-muted-foreground">
-                        Using theme defaults. Uncheck "Use Theme Default" to customize.
-                      </p>
-                    </div>
-                  )}
                 </div>
 
-                {/* Save Button */}
-                <div className="mt-6 pt-4 border-t border-border flex items-center justify-between">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setLayoutCustomizeSection(null)}
-                  >
-                    Close Preview
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={!hasChanges || isSaving}
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    {isSaving ? "Saving..." : "Save Changes"}
-                  </Button>
+                <div className="px-4 pb-4 text-xs text-center text-on-surface-variant border-t border-border bg-card/50 py-2">
+                  Live preview • Changes apply instantly
                 </div>
               </div>
             </div>

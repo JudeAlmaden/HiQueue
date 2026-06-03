@@ -7,10 +7,11 @@ export type PortalLayoutSettings = {
 
 export type PortalLayoutControlSettings = {
   login?: {
+    splitLeftPanelBgImage?: string
+    splitLeftPanelBg?: string
     splitRightPanelBg?: string
     pageBg?: string
     pageBgImage?: string
-    useThemeDefault?: boolean
     typographyScale?: number
     fontColor?: string
     sharpness?: number
@@ -18,7 +19,6 @@ export type PortalLayoutControlSettings = {
   ticketing?: {
     pageBg?: string
     pageBgImage?: string
-    useThemeDefault?: boolean
     typographyScale?: number
     fontColor?: string
     sharpness?: number
@@ -26,7 +26,6 @@ export type PortalLayoutControlSettings = {
   liveDisplay?: {
     pageBg?: string
     pageBgImage?: string
-    useThemeDefault?: boolean
     typographyScale?: number
     fontColor?: string
     sharpness?: number
@@ -34,7 +33,6 @@ export type PortalLayoutControlSettings = {
   track?: {
     pageBg?: string
     pageBgImage?: string
-    useThemeDefault?: boolean
     typographyScale?: number
     fontColor?: string
     sharpness?: number
@@ -78,11 +76,14 @@ export function parsePortalTheme(raw: string): PortalTheme {
       if (!value || typeof value !== "object") return undefined
       const obj = value as Record<string, unknown>
       return {
+        splitLeftPanelBgImage:
+          typeof obj.splitLeftPanelBgImage === "string" ? obj.splitLeftPanelBgImage : undefined,
+        splitLeftPanelBg:
+          typeof obj.splitLeftPanelBg === "string" ? obj.splitLeftPanelBg : undefined,
         splitRightPanelBg:
           typeof obj.splitRightPanelBg === "string" ? obj.splitRightPanelBg : undefined,
         pageBg: typeof obj.pageBg === "string" ? obj.pageBg : undefined,
         pageBgImage: typeof obj.pageBgImage === "string" ? obj.pageBgImage : undefined,
-        useThemeDefault: typeof obj.useThemeDefault === "boolean" ? obj.useThemeDefault : undefined,
         typographyScale:
           typeof obj.typographyScale === "number" ? Math.min(1.25, Math.max(0.85, obj.typographyScale)) : undefined,
         fontColor: typeof obj.fontColor === "string" ? obj.fontColor : undefined,

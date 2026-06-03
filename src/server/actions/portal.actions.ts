@@ -102,8 +102,11 @@ function sanitizeLayoutControl(
   value: unknown,
   allowSplitRightPanelBg: boolean
 ): {
+  splitLeftPanelBgImage?: string
+  splitLeftPanelBg?: string
   splitRightPanelBg?: string
   pageBg?: string
+  pageBgImage?: string
   typographyScale?: number
   fontColor?: string
   sharpness?: number
@@ -112,11 +115,20 @@ function sanitizeLayoutControl(
   const obj = value as Record<string, unknown>
 
   const result = {
+    splitLeftPanelBgImage:
+      allowSplitRightPanelBg && typeof obj.splitLeftPanelBgImage === "string"
+        ? String(obj.splitLeftPanelBgImage)
+        : undefined,
+    splitLeftPanelBg:
+      allowSplitRightPanelBg && typeof obj.splitLeftPanelBg === "string"
+        ? String(obj.splitLeftPanelBg)
+        : undefined,
     splitRightPanelBg:
       allowSplitRightPanelBg && typeof obj.splitRightPanelBg === "string"
         ? String(obj.splitRightPanelBg)
         : undefined,
     pageBg: typeof obj.pageBg === "string" ? String(obj.pageBg) : undefined,
+    pageBgImage: typeof obj.pageBgImage === "string" ? String(obj.pageBgImage) : undefined,
     typographyScale:
       typeof obj.typographyScale === "number"
         ? Math.min(1.25, Math.max(0.85, obj.typographyScale))
