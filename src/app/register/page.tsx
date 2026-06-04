@@ -7,7 +7,8 @@ import { registerUser } from "@/server/actions/auth.action"
 import { useState } from "react"
 import Link from "next/link"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Layers, Globe, Apple, ArrowRight } from "lucide-react"
+import { Logo } from "@/components/Logo"
+import { Globe, Apple, ArrowRight, Loader2 } from "lucide-react"
 
 export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
@@ -109,23 +110,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-md space-y-8">
           {/* Logo */}
           <div className="flex flex-col space-y-3">
-            <div className="flex items-center gap-2.5 mb-2">
-              <div 
-                className="flex h-10 w-10 items-center justify-center rounded-xl shadow-sm"
-                style={{ 
-                  backgroundColor: "var(--primary)",
-                  color: "var(--on-primary)"
-                }}
-              >
-                <Layers className="h-5 w-5" />
-              </div>
-              <span 
-                className="text-xl font-bold"
-                style={{ color: "var(--on-surface)" }}
-              >
-                HiQueue
-              </span>
-            </div>
+            <Logo useImage />
             <h1 
               className="text-3xl font-bold leading-tight"
               style={{ color: "var(--on-surface)" }}
@@ -156,9 +141,21 @@ export default function RegisterPage() {
             action={async (formData) => {
               setIsLoading(true)
               setError(null)
-              const res = await registerUser(formData)
-              if (res && !res.success) {
-                setError(res.error)
+              try {
+                const res = await registerUser(formData)
+                if (res && !res.success) {
+                  setError(res.error)
+                  setIsLoading(false)
+                }
+                // If successful, registerUser will redirect (throws NEXT_REDIRECT)
+              } catch (error) {
+                // redirect() throws a NEXT_REDIRECT error which is expected
+                // If it's not a redirect, show error
+                if (error && typeof error === 'object' && 'digest' in error) {
+                  // This is a Next.js redirect, let it through
+                  throw error
+                }
+                setError("An unexpected error occurred. Please try again.")
                 setIsLoading(false)
               }
             }}
@@ -257,14 +254,23 @@ export default function RegisterPage() {
             <Button
               disabled={isLoading}
               type="submit"
-              className="w-full h-11 rounded-full font-semibold text-sm transition-all"
+              className="w-full h-11 rounded-full font-semibold text-sm transition-all disabled:opacity-70"
               style={{ 
                 backgroundColor: "var(--primary)",
                 color: "var(--on-primary)"
               }}
             >
-              {isLoading ? "Creating account..." : "Create Account"}
-              <ArrowRight className="h-4 w-4 ml-2" />
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                <>
+                  Create Account
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </>
+              )}
             </Button>
           </form>
 

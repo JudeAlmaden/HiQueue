@@ -2,11 +2,12 @@ import { auth, signOut } from "@/auth"
 import { Button, buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { Layers, LogOut, Palette } from "lucide-react"
+import { LogOut, Palette } from "lucide-react"
 import { requireWorkspaceOwner } from "@/server/lib/account-access"
 import { getUserOrganizationWithDetails } from "@/server/services/organization.service"
 import SidebarNav from "./SidebarNav"
 import { SidebarFooter } from "./SidebarFooter"
+import { Logo } from "@/components/Logo"
 
 export default async function DashboardLayout({
   children,
@@ -52,18 +53,11 @@ export default async function DashboardLayout({
         <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
           {/* Logo / Header */}
           <div className="flex items-center justify-between px-6 pb-6 border-b border-border">
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-on-primary font-bold shadow-md">
-                <Layers className="h-5 w-5" />
-              </div>
-              <span className="text-xl font-bold tracking-tight text-primary">
-                HiQueue
-              </span>
-            </div>
+            <Logo variant="with-name" size="md" useImage />
             <Link
-              href={`/dashboard/organizations/${organization.slug}/portal`}
-              aria-label="Open theme settings"
-              className={buttonVariants({ variant: "ghost", size: "icon", className: "h-8 w-8 text-primary hover:text-primary" })}
+              href={`/dashboard/organizations/${organization.slug}/portal?tab=theme`}
+              aria-label="Change theme"
+              className={buttonVariants({ variant: "ghost", size: "icon", className: "h-9 w-9 text-on-surface-variant hover:text-on-surface hover:bg-surface-container" })}
             >
               <Palette className="h-4 w-4" />
             </Link>
@@ -90,19 +84,12 @@ export default async function DashboardLayout({
       <div className="md:pl-64 flex flex-col flex-1 w-full">
         {/* Mobile Header */}
         <header className="sticky top-0 z-10 flex md:hidden items-center justify-between h-16 px-4 border-b border-border bg-surface transition-colors">
+          <Logo variant="with-name" size="sm" useImage />
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-on-primary font-bold">
-              <Layers className="h-4 w-4" />
-            </div>
-            <span className="text-lg font-bold tracking-tight text-on-surface">
-              HiQueue
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
             <Link
-              href={`/dashboard/organizations/${organization.slug}/portal`}
-              aria-label="Open theme settings"
-              className={buttonVariants({ variant: "ghost", size: "icon", className: "h-8 w-8 text-primary hover:text-primary" })}
+              href={`/dashboard/organizations/${organization.slug}/portal?tab=theme`}
+              aria-label="Change theme"
+              className={buttonVariants({ variant: "ghost", size: "icon", className: "h-8 w-8 text-on-surface-variant hover:text-on-surface hover:bg-surface-container" })}
             >
               <Palette className="h-4 w-4" />
             </Link>
@@ -112,7 +99,7 @@ export default async function DashboardLayout({
                 await signOut()
               }}
             >
-              <Button variant="ghost" size="icon" type="submit" className="h-8 w-8 text-on-surface-variant">
+              <Button variant="ghost" size="icon" type="submit" className="h-8 w-8 text-on-surface-variant hover:text-error">
                 <LogOut className="h-4 w-4" />
               </Button>
             </form>

@@ -8,7 +8,8 @@ import { useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Layers, Globe, GitBranch, ArrowRight, Building2 } from "lucide-react"
+import { Logo } from "@/components/Logo"
+import { Globe, GitBranch, ArrowRight, Building2, Loader2 } from "lucide-react"
 
 export function LoginForm() {
   const searchParams = useSearchParams()
@@ -33,23 +34,7 @@ export function LoginForm() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 md:p-16">
         <div className="w-full max-w-md space-y-8">
           <div className="flex flex-col space-y-3">
-            <div className="flex items-center gap-2.5 mb-1">
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-xl text-white font-bold shadow-lg"
-                style={{
-                  backgroundColor: "var(--primary)",
-                  boxShadow: "0 4px 14px rgba(44,74,62,0.25)",
-                }}
-              >
-                <Layers className="h-5 w-5" />
-              </div>
-              <span
-                className="text-xl font-bold tracking-tight"
-                style={{ color: "var(--on-surface)" }}
-              >
-                HiQueue
-              </span>
-            </div>
+            <Logo useImage />
             <span
               className="inline-flex w-fit items-center px-3 py-1 rounded-full text-xs font-semibold"
               style={{
@@ -113,9 +98,21 @@ export function LoginForm() {
             action={async (formData) => {
               setIsLoading(true)
               setError(null)
-              const res = await loginUser(formData)
-              if (res && !res.success) {
-                setError(res.error)
+              try {
+                const res = await loginUser(formData)
+                if (res && !res.success) {
+                  setError(res.error)
+                  setIsLoading(false)
+                }
+                // If successful, loginUser will redirect (throws NEXT_REDIRECT)
+              } catch (error) {
+                // redirect() throws a NEXT_REDIRECT error which is expected
+                // If it's not a redirect, show error
+                if (error && typeof error === 'object' && 'digest' in error) {
+                  // This is a Next.js redirect, let it through
+                  throw error
+                }
+                setError("An unexpected error occurred. Please try again.")
                 setIsLoading(false)
               }
             }}
@@ -179,14 +176,21 @@ export function LoginForm() {
             <Button
               disabled={isLoading}
               type="submit"
-              className="w-full h-12 rounded-full font-semibold text-sm transition-all shadow-lg hover:opacity-90"
+              className="w-full h-12 rounded-full font-semibold text-sm transition-all shadow-lg hover:opacity-90 disabled:opacity-70"
               style={{
                 backgroundColor: "var(--primary)",
                 color: "var(--on-primary)",
                 boxShadow: "0 4px 14px rgba(44,74,62,0.3)",
               }}
             >
-              {isLoading ? "Signing in..." : "Sign in to dashboard"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                "Sign in to dashboard"
+              )}
             </Button>
           </form>
 

@@ -1,7 +1,8 @@
 import Link from "next/link"
-import { Layers, Monitor, Tag, Users } from "lucide-react"
+import { Monitor, Tag, Users } from "lucide-react"
 import { UserMenu } from "@/components/portal/UserMenu"
 import type { OrgPortalContext } from "@/lib/portal-theme"
+import { Logo } from "@/components/Logo"
 
 interface PortalHeaderProps {
   org: Pick<OrgPortalContext, "name" | "slug">
@@ -26,9 +27,7 @@ export function PortalHeader({
         {/* Left: logo + nav */}
         <div className="flex items-center gap-6 min-w-0">
           <Link href={`/org/${org.slug}/counter`} className="flex items-center gap-3 shrink-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-on-primary shadow-md">
-              <Layers className="h-5 w-5" />
-            </div>
+            <Logo variant="icon-only" size="md" useImage />
             <div className="hidden sm:block min-w-0">
               <span className="text-sm font-bold tracking-tight text-on-surface block truncate">
                 {org.name}

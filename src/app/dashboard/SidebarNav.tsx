@@ -10,6 +10,7 @@ import {
   ListOrdered,
   CalendarRange,
   SlidersHorizontal,
+  Palette,
 } from "lucide-react"
 
 interface Organization {
@@ -57,6 +58,12 @@ export default function SidebarNav({ organization }: SidebarNavProps) {
           match: "prefix" as const,
         },
         {
+          name: "Portal customization",
+          href: `/dashboard/organizations/${organization.slug}/portal`,
+          icon: Palette,
+          match: "prefix" as const,
+        },
+        {
           name: "Workspace settings",
           href: "/dashboard/organizations",
           icon: SlidersHorizontal,
@@ -101,9 +108,10 @@ export default function SidebarNav({ organization }: SidebarNavProps) {
         })}
       </nav>
 
+      <hr className="m-5"></hr>
       {organization && (
-        <div className="mt-8 px-4 flex-1 min-h-0">
-          <div className="flex items-center gap-2.5 px-3 mb-3 min-w-0">
+        <div className="px-4 flex-1 min-h-0">
+          <div className="flex items-center gap-2.5 px-1 mb-3 min-w-0">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-secondary-container text-on-secondary-container">
               <Building2 className="h-3.5 w-3.5" />
             </div>

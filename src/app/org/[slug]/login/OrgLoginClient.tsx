@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { loginUser } from "@/server/actions/auth.action"
-import { Layers } from "lucide-react"
+import { Logo } from "@/components/Logo"
 import type { OrgPortalContext } from "@/lib/portal-theme"
 import { LoginLayoutShell } from "@/components/portal/layouts/LoginLayouts"
 import { useToast } from "@/components/ui/toast"
@@ -107,9 +107,7 @@ export default function OrgLoginClient({
       {showTopBar && (
         <div className="flex items-center justify-between px-4 sm:px-6 h-14 border-b border-border bg-surface/80 backdrop-blur-md z-10">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-on-primary overflow-hidden">
-              <Layers className="h-4 w-4" />
-            </div>
+            <Logo variant="icon-only" size="sm" useImage />
             <div className="min-w-0">
               <p className="text-sm font-bold text-on-surface truncate">HiQueue</p>
               <p className="text-[10px] text-on-surface-variant uppercase tracking-wider">Staff portal</p>

@@ -129,6 +129,15 @@
   --sidebar-accent-foreground:     #1a1c1a;
   --sidebar-border:                #c2c8c0;
   --sidebar-ring:                  #4a654e;
+
+  /* Logo adaptive filters for light mode */
+  --logo-brightness:               1;
+  --logo-contrast:                 1;
+  --logo-saturate:                 1;
+  
+  /* Logo icon color filters */
+  --logo-icon-brightness:          1;
+  --logo-icon-contrast:            1;
 }
 
 /* ─── Dark Mode ─────────────────────────────────────────────── */
@@ -191,6 +200,15 @@
   --sidebar-accent-foreground:     #e2e3e0;
   --sidebar-border:                #424842;
   --sidebar-ring:                  #b0ceb2;
+
+  /* Logo adaptive filters for dark mode - brighten and desaturate slightly */
+  --logo-brightness:               1.15;
+  --logo-contrast:                 0.95;
+  --logo-saturate:                 0.9;
+  
+  /* Logo icon color filters for dark mode */
+  --logo-icon-brightness:          1.2;
+  --logo-icon-contrast:            1.1;
 }
 
 /* ─── Ocean Theme ───────────────────────────────────────────── */
@@ -239,6 +257,11 @@
   --border: #99ccff;
   --input: #e6f4fc;
   --ring: #0077b6;
+
+  /* Logo filters for ocean theme - enhance blue tones */
+  --logo-brightness:               1.05;
+  --logo-contrast:                 1.1;
+  --logo-saturate:                 1.2;
 }
 
 .theme-ocean.dark {
@@ -281,6 +304,11 @@
   --border: #2f5c73;
   --input: #14334a;
   --ring: #58b6e8;
+
+  /* Logo filters for ocean dark theme - brighten significantly */
+  --logo-brightness:               1.3;
+  --logo-contrast:                 1.05;
+  --logo-saturate:                 1.1;
 }
 
 /* ─── Sunset Theme ──────────────────────────────────────────── */
@@ -329,6 +357,11 @@
   --border: #e6b896;
   --input: #fde8d7;
   --ring: #e07a5f;
+
+  /* Logo filters for sunset theme - warm and vibrant */
+  --logo-brightness:               1.1;
+  --logo-contrast:                 1.05;
+  --logo-saturate:                 1.25;
 }
 
 .theme-sunset.dark {
@@ -371,6 +404,11 @@
   --border: #794c35;
   --input: #47281a;
   --ring: #ff9f7f;
+
+  /* Logo filters for sunset dark theme - warm glow */
+  --logo-brightness:               1.25;
+  --logo-contrast:                 1;
+  --logo-saturate:                 1.15;
 }
 
 /* ─── High Contrast Theme ───────────────────────────────────── */
@@ -419,6 +457,11 @@
   --border: #000000;
   --input: #e0e0e0;
   --ring: #ffff00;
+
+  /* Logo filters for high contrast theme - maximum visibility */
+  --logo-brightness:               1.1;
+  --logo-contrast:                 1.3;
+  --logo-saturate:                 1.4;
 }
 
 .theme-high-contrast.dark {
@@ -466,6 +509,11 @@
   --border: #ffffff;
   --input: #333333;
   --ring: #ffff00;
+
+  /* Logo filters for high contrast dark theme - invert and enhance */
+  --logo-brightness:               1.5;
+  --logo-contrast:                 1.4;
+  --logo-saturate:                 1.3;
 }
 
 /* ─── Custom Theme (Uses CSS Variables) ────────────────────── */
@@ -491,6 +539,11 @@
   --on-surface-variant:            color-mix(in srgb, var(--foreground, #000000) 70%, var(--background, #ffffff));
   --outline:                       color-mix(in srgb, var(--foreground, #000000) 45%, var(--background, #ffffff));
   --outline-variant:               color-mix(in srgb, var(--foreground, #000000) 15%, var(--background, #ffffff));
+
+  /* Logo filters for custom theme - subtle adaptation */
+  --logo-brightness:               1.05;
+  --logo-contrast:                 1;
+  --logo-saturate:                 1.1;
 }
 
 @layer base {

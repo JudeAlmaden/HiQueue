@@ -1,7 +1,8 @@
 import Link from "next/link"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { Logo } from "@/components/Logo"
 import { Button } from "@/components/ui/button"
-import { Layers, ArrowRight, ListOrdered, Monitor, Users, LayoutDashboard } from "lucide-react"
+import { ArrowRight, ListOrdered, Monitor, Users, LayoutDashboard } from "lucide-react"
 import { auth } from "@/auth"
 
 export default async function Home() {
@@ -12,12 +13,7 @@ export default async function Home() {
 
       {/* Nav */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-on-primary shadow-md">
-            <Layers className="h-5 w-5" />
-          </div>
-          <span className="text-lg font-bold tracking-tight text-foreground">HiQueue</span>
-        </div>
+        <Logo size="sm" useImage />
         <div className="flex items-center gap-3">
           <ThemeToggle />
           {isLoggedIn ? (
