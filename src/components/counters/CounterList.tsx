@@ -51,6 +51,11 @@ export function CounterList({ counters, services, queueId, currentUserRole, orga
   const [viewingCounter, setViewingCounter] = useState<Counter | null>(null)
 
   const isAllowedToManage = currentUserRole === "owner" || currentUserRole === "admin"
+  
+  // Counter limit
+  const COUNTER_LIMIT = 20
+  const counterCount = counters.length
+  const isAtCounterLimit = counterCount >= COUNTER_LIMIT
 
   return (
     <div className="space-y-4">
@@ -58,18 +63,27 @@ export function CounterList({ counters, services, queueId, currentUserRole, orga
         <div>
           <h3 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant/80">Counters</h3>
           <p className="text-[11px] text-on-surface-variant leading-none mt-0.5">
-            Configure counter consoles where staff process tickets.
+            <span className={isAtCounterLimit ? "text-error font-semibold" : ""}>
+              {counterCount} / {COUNTER_LIMIT} counter{counterCount !== 1 ? 's' : ''}
+            </span>
+            {" • "}Configure counter consoles where staff process tickets.
           </p>
         </div>
 
         {isAllowedToManage && (
-          <Button
-            onClick={() => setIsAddOpen(true)}
-            className="flex items-center gap-1 h-8 px-3 rounded-full font-bold text-[11px] bg-primary text-on-primary hover:opacity-90 shadow-sm transition-all"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add Counter
-          </Button>
+          <div className="text-right">
+            <Button
+              onClick={() => setIsAddOpen(true)}
+              disabled={isAtCounterLimit}
+              className="flex items-center gap-1 h-8 px-3 rounded-full font-bold text-[11px] bg-primary text-on-primary hover:opacity-90 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add Counter
+            </Button>
+            {isAtCounterLimit && (
+              <p className="text-[10px] text-error mt-1">Counter limit reached</p>
+            )}
+          </div>
         )}
       </div>
 

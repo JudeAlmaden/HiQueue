@@ -30,7 +30,7 @@
 - **Maximum Admin Members:** 5
 - **Owner Members:** 1 (system enforced)
 - **Location of Limit Check:**
-  - Backend: `src/server/services/member.service.ts` in `createMember()`
+  - Backend: `src/server/services/member.service.ts` in `createMember()` (MEMBER_LIMITS constant)
   - Frontend: `src/app/dashboard/organizations/[slug]/members/MembersManager.tsx`
 - **User Experience:**
   - Displays "X / 30 total members • X / 25 staff • X / 5 admins"
@@ -41,10 +41,21 @@
     - "Member limit reached. You can have up to 30 members per organization."
     - "Staff member limit reached. You can have up to 25 staff members."
     - "Admin limit reached. You can have up to 5 admins."
+- **Important Notes:**
+  - Owner cannot remove themselves or other owners
+  - Members cannot be removed if assigned to counters (must unassign first)
+  - Removal implements **soft delete**: membership deleted, user account marked inactive if no other memberships exist
 
 ### Counter Limits
-- **No explicit limit** is currently enforced on counters per queue
-- Counters are unlimited for now, but could be limited in the future if needed
+- **Maximum Counters per Queue:** 20
+- **Location of Limit Check:**
+  - Backend: `src/server/services/counter.service.ts` in `createCounter()`
+  - Frontend: `src/components/counters/CounterList.tsx`
+- **User Experience:**
+  - Counter count is displayed as "X / 20 counters" below the page title
+  - "Add Counter" button is disabled when limit is reached
+  - Displays "Counter limit reached" message under the disabled button
+  - Backend returns error: "Counter limit reached. You can create up to 20 counters per queue."
 
 ## Deletion Cascade Behavior
 
@@ -147,45 +158,48 @@ Similar to services - counters with active ticket assignments cannot be deleted.
 ### Member Deletion (Soft Delete)
 
 **Process Flow:**
-1. User (owner) clicks "Remove" on a member
-2. System validates permissions (must be owner)
-3. System checks for counter assignments
-4. System performs soft delete if checks pass
-
-**What Happens:**
-
-#### ✅ Successful Deletion (Soft)
-```typescript
-// member.service.ts → deleteMember()
-// Check for counter assignments
-const counterAssignments = await db.counter.count({
-  where: {
-    assignedStaff: {
-      some: { id: input.id },
-    },
-  },
-})
-
-if (counterAssignments > 0) {
-  return fail(`Cannot remove member. They are assigned to ${counterAssignments} counters. Please unassign them first.`)
-}
-
-await memberRepo.softDeleteMember(input.id, input.organizationId)
+```
+User (owner) clicks "Remove" 
+  ↓
+Permission Check (must be owner)
+  ↓
+Cannot be self / Cannot be owner role
+  ↓
+Association Check (counter assignments)
+  ↓
+┌─────────────┬──────────────┐
+Has assignments   No assignments
+    ↓                  ↓
+❌ FAIL          ✅ SUCCESS
+    ↓                  ↓
+Error msg      Delete membership (hard)
+               Check other orgs
+                     ↓
+        ┌────────────┴────────────┐
+   Has other orgs          No other orgs
+        ↓                         ↓
+   User active            Was created by
+                          another user?
+                         ↓            ↓
+                       Yes           No
+                         ↓            ↓
+                  Soft Delete    User active
+                  (isActive=false,
+                   deletedAt=now)
 ```
 
 **Soft Delete Behavior:**
 1. **Membership is deleted** (hard delete from OrganizationMembership table)
 2. **User account status depends on:**
    - If user has other organization memberships → User remains active
-   - If user has no other memberships AND was created by another user:
+   - If user has no other memberships AND was created by another user (staff member):
      - `isActive` set to `false`
      - `deletedAt` set to current timestamp
      - User account preserved for audit trail
    - If user has no other memberships AND was self-registered → User remains active
 
 **Why Soft Delete:**
-- Preserves audit trail
-- Maintains historical data integrity
+- Preserves audit trail and historical data integrity
 - Allows potential recovery
 - Supports compliance requirements
 
@@ -194,20 +208,11 @@ await memberRepo.softDeleteMember(input.id, input.organizationId)
 - Repository: `src/server/repositories/member.repo.ts` → `softDeleteMember()`
 
 #### ❌ Failed Deletion
-Member deletion **fails** if the member is assigned to any counters:
+Member deletion **fails** if assigned to any counters:
 
 **Error Message:** "Cannot remove member. They are assigned to X counters. Please unassign them first."
 
-**Why this protection exists:**
-- Prevents operational disruption
-- Ensures no orphaned counter assignments
-- Maintains data integrity for queue operations
-
-**Resolution:**
-1. Go to counter management
-2. Unassign the staff member from all counters
-3. Return to members page
-4. Now the member can be removed
+**Resolution:** Go to counter management → unassign staff → then remove member
 
 ## Database Schema Relationships
 
@@ -247,7 +252,7 @@ By default, Prisma uses `onDelete: Cascade` for required relationships (non-null
 |----------|-------|-------------|---------------------|
 | **Queues** | 3 per organization | Backend + Frontend | Cannot delete with active tickets |
 | **Services** | 50 per queue | Backend + Frontend | Cannot delete with active tickets |
-| **Counters** | Unlimited | N/A | Cannot delete with active assignments (likely) |
+| **Counters** | 20 per queue | Backend + Frontend | Cannot delete with assigned staff |
 | **Members (Total)** | 30 per organization | Backend + Frontend | Cannot delete if assigned to counters |
 | **Members (Staff)** | 25 per organization | Backend + Frontend | Soft delete (preserve audit trail) |
 | **Members (Admin)** | 5 per organization | Backend + Frontend | Soft delete (preserve audit trail) |
@@ -269,10 +274,43 @@ By default, Prisma uses `onDelete: Cascade` for required relationships (non-null
 - [x] Display service/counter counts on queue cards
 - [x] Documentation of limits and cascade behavior
 
+## Visual Cascade Diagram
+
+```
+                    QUEUE (Parent)
+                   [id: queue-123]
+                         │
+            Protection: Cannot delete if
+              active tickets exist
+                         │
+         ┌───────────────┼───────────────┐
+         │               │               │
+         ▼               ▼               ▼
+    SERVICES        COUNTERS         TICKETS
+    ┌────────┐      ┌────────┐      ┌────────┐
+    │SVC-001 │      │Counter1│      │ A-001  │
+    │SVC-002 │      │Counter2│      │ A-002  │
+    │SVC-003 │      │Counter3│      │ B-001  │
+    └────────┘      └────────┘      └────────┘
+         │               │                │
+         ▼               ▼                ▼
+    ALL DELETED    ALL DELETED       ALL DELETED
+                        │                │
+                        ▼                ▼
+                  Staff          TicketEvents
+                Assignments        (cascade)
+                 removed
+```
+
+**Also Cascade Deleted:**
+- QueueSessions - All queue session records
+- DisplayScreens - All display screen configurations
+- Counter-Service M:M relationships
+- Staff Assignments to counters
+
 ## Future Considerations
 
-1. **Counter Limits:** Currently unlimited, could add a limit (e.g., 20 per queue) if needed
-2. **Soft Deletes:** Consider implementing soft deletes instead of hard deletes for audit trail
-3. **Archive Feature:** Allow archiving old queues instead of deletion
-4. **Bulk Operations:** Add ability to bulk-delete completed tickets to save storage
-5. **Subscription Tiers:** Different limits based on subscription level (e.g., Free: 1 queue, Pro: 3 queues, Enterprise: unlimited)
+1. **Subscription Tiers:** Different limits based on subscription level (e.g., Free: 1 queue, Pro: 3 queues, Enterprise: unlimited)
+2. **Archive Feature:** Allow archiving old queues instead of deletion
+3. **Bulk Operations:** Add ability to bulk-delete completed tickets to save storage
+4. **Soft Delete Management UI:** View and restore soft-deleted members

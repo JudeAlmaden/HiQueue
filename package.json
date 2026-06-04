@@ -9,7 +9,14 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "prisma:generate": "prisma generate --schema=./prisma/schema/base.prisma",
+    "prisma:migrate": "prisma migrate dev --schema=./prisma/schema/base.prisma",
+    "prisma:migrate:deploy": "prisma migrate deploy --schema=./prisma/schema/base.prisma",
+    "prisma:migrate:reset": "prisma migrate reset --schema=./prisma/schema/base.prisma",
+    "prisma:studio": "prisma studio --schema=./prisma/schema/base.prisma",
+    "prisma:push": "prisma db push --schema=./prisma/schema/base.prisma",
+    "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

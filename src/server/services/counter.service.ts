@@ -4,6 +4,9 @@ import { CreateCounterInput, UpdateCounterInput } from "@/server/validators/coun
 import { db } from "@/server/lib/db"
 import { hasOrganizationRole } from "@/server/lib/permissions"
 
+// Counter limit per queue
+const COUNTER_LIMIT = 20
+
 async function checkOwner(userId: string, organizationId: string): Promise<boolean> {
   return hasOrganizationRole(userId, organizationId, ["owner"])
 }
@@ -43,6 +46,15 @@ export async function createCounter(
 
     if (!queue || queue.organizationId !== organizationId) {
       return fail("Queue not found or does not belong to your organization")
+    }
+
+    // Check counter limit per queue
+    const existingCounters = await db.counter.count({
+      where: { queueId: input.queueId },
+    })
+
+    if (existingCounters >= COUNTER_LIMIT) {
+      return fail(`Counter limit reached. You can create up to ${COUNTER_LIMIT} counters per queue.`)
     }
 
     const serviceIds = await normalizeServiceIdsForQueue(input.serviceIds, input.queueId)

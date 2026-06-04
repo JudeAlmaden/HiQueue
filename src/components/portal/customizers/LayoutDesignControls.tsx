@@ -54,9 +54,6 @@ function CollapsibleSection({
 }
 
 export function LayoutDesignControls({
-  layoutKey,
-  layoutType,
-  previewOptionKey,
   activeControls,
   onControlChange,
   children,
