@@ -80,8 +80,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const dbUser = await db.user.findUnique({
           where: { id: user.id },
-          select: { createdById: true },
+          select: { createdById: true, isActive: true, deletedAt: true },
         })
+
+        // Auto-logout if user is deleted or deactivated
+        if (!dbUser || !dbUser.isActive || dbUser.deletedAt) {
+          return null as any // Forces session to be destroyed
+        }
 
         const owner = isWorkspaceOwner(dbUser?.createdById)
         token.isWorkspaceOwner = owner
@@ -91,14 +96,42 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             where: { userId: user.id },
             include: { organization: { select: { slug: true } } },
           })
-          token.orgSlug = membership?.organization.slug ?? null
+          
+          // Auto-logout if user no longer has organization membership
+          if (!membership) {
+            return null as any
+          }
+          
+          token.orgSlug = membership.organization.slug
         } else {
           token.orgSlug = null
+        }
+      } else if (token.id) {
+        // Validate existing token on every request
+        try {
+          const dbUser = await db.user.findUnique({
+            where: { id: token.id as string },
+            select: { isActive: true, deletedAt: true },
+          })
+
+          // Auto-logout if user was deleted or deactivated
+          if (!dbUser || !dbUser.isActive || dbUser.deletedAt) {
+            return null as any
+          }
+        } catch (error) {
+          // Database error - force logout for safety
+          console.error("Error validating user session:", error)
+          return null as any
         }
       }
       return token
     },
     async session({ session, token }) {
+      // If token is null (user deleted/deactivated), return null session
+      if (!token || !token.id) {
+        return null as any
+      }
+
       if (session.user) {
         session.user.id = token.id as string
         session.user.isWorkspaceOwner = token.isWorkspaceOwner === true
