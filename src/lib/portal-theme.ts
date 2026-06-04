@@ -94,7 +94,7 @@ export function parsePortalTheme(raw: string): PortalTheme {
 
     const layoutFromObject =
       parsedLayout && typeof parsedLayout === "object"
-        ? {
+        ? ({
             login:
               parsedLayout.login === "split" || parsedLayout.login === "minimal"
                 ? parsedLayout.login
@@ -115,15 +115,15 @@ export function parsePortalTheme(raw: string): PortalTheme {
                   : undefined,
             liveDisplay:
               parsedLayout.liveDisplay === "no-waiting"
-                ? "no-waiting"
+                ? ("no-waiting" as const)
                 : parsedLayout.liveDisplay === "standard" || parsedLayout.liveDisplay === "ads" || parsedLayout.liveDisplay === "ticker-wall" || parsedLayout.liveDisplay === "theater"
-                  ? "standard"
+                  ? ("standard" as const)
                   : undefined,
             track:
               parsedLayout.track === "centered" || parsedLayout.track === "split" || parsedLayout.track === "compact" || parsedLayout.track === "status-first" || parsedLayout.track === "timeline"
-                ? "centered"
+                ? ("centered" as const)
                 : undefined,
-          }
+          } as PortalLayoutSettings)
         : undefined
 
     const layoutControlsFromObject =
