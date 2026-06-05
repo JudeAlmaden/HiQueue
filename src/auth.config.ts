@@ -9,4 +9,6 @@ export const authConfig = {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
+  // Trust all Vercel deployment URLs to prevent CORS issues
+  trustHost: true,
 } satisfies NextAuthConfig
