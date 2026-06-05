@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -43,6 +44,7 @@ export default function RootLayout({
             {children}
           </Toaster>
           <Sonner />
+          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>
