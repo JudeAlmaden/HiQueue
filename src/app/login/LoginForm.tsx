@@ -22,6 +22,30 @@ export function LoginForm() {
   )
   const [isLoading, setIsLoading] = useState(false)
 
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError(null)
+    
+    const formData = new FormData(e.currentTarget)
+    
+    // Call the server action
+    loginUser(formData).then((res) => {
+      if (res && !res.success) {
+        setError(res.error)
+        setIsLoading(false)
+      }
+      // If successful, loginUser will redirect
+    }).catch((error) => {
+      if (error && typeof error === 'object' && 'digest' in error) {
+        // This is a Next.js redirect, let it through
+        throw error
+      }
+      setError("An unexpected error occurred. Please try again.")
+      setIsLoading(false)
+    })
+  }
+
   return (
     <div
       className="min-h-screen flex"
@@ -95,27 +119,7 @@ export function LoginForm() {
           )}
 
           <form
-            action={async (formData) => {
-              setIsLoading(true)
-              setError(null)
-              try {
-                const res = await loginUser(formData)
-                if (res && !res.success) {
-                  setError(res.error)
-                  setIsLoading(false)
-                }
-                // If successful, loginUser will redirect (throws NEXT_REDIRECT)
-              } catch (error) {
-                // redirect() throws a NEXT_REDIRECT error which is expected
-                // If it's not a redirect, show error
-                if (error && typeof error === 'object' && 'digest' in error) {
-                  // This is a Next.js redirect, let it through
-                  throw error
-                }
-                setError("An unexpected error occurred. Please try again.")
-                setIsLoading(false)
-              }
-            }}
+            onSubmit={handleSubmit}
             className="space-y-5"
           >
             <div className="space-y-2">
