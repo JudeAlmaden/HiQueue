@@ -34,7 +34,7 @@ export function LoginForm() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 md:p-16">
         <div className="w-full max-w-md space-y-8">
           <div className="flex flex-col space-y-3">
-            <Logo useImage />
+            <Logo />
             <span
               className="inline-flex w-fit items-center px-3 py-1 rounded-full text-xs font-semibold"
               style={{

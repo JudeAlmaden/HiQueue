@@ -53,7 +53,7 @@ export default async function DashboardLayout({
         <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
           {/* Logo / Header */}
           <div className="flex items-center justify-between px-6 pb-6 border-b border-border">
-            <Logo variant="with-name" size="md" useImage />
+            <Logo variant="with-name" size="md" />
             <Link
               href={`/dashboard/organizations/${organization.slug}/portal?tab=theme`}
               aria-label="Change theme"
@@ -84,7 +84,7 @@ export default async function DashboardLayout({
       <div className="md:pl-64 flex flex-col flex-1 w-full">
         {/* Mobile Header */}
         <header className="sticky top-0 z-10 flex md:hidden items-center justify-between h-16 px-4 border-b border-border bg-surface transition-colors">
-          <Logo variant="with-name" size="sm" useImage />
+          <Logo variant="with-name" size="sm" />
           <div className="flex items-center gap-2">
             <Link
               href={`/dashboard/organizations/${organization.slug}/portal?tab=theme`}

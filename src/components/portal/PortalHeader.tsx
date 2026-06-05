@@ -27,7 +27,7 @@ export function PortalHeader({
         {/* Left: logo + nav */}
         <div className="flex items-center gap-6 min-w-0">
           <Link href={`/org/${org.slug}/counter`} className="flex items-center gap-3 shrink-0">
-            <Logo variant="icon-only" size="md" useImage />
+            <Logo variant="icon-only" size="md" />
             <div className="hidden sm:block min-w-0">
               <span className="text-sm font-bold tracking-tight text-on-surface block truncate">
                 {org.name}

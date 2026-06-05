@@ -110,7 +110,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-md space-y-8">
           {/* Logo */}
           <div className="flex flex-col space-y-3">
-            <Logo useImage />
+            <Logo />
             <h1 
               className="text-3xl font-bold leading-tight"
               style={{ color: "var(--on-surface)" }}
