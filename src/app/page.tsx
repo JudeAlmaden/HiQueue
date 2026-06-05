@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { Logo } from "@/components/Logo"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, ListOrdered, Monitor, Users, LayoutDashboard } from "lucide-react"
@@ -15,7 +14,6 @@ export default async function Home() {
       <header className="flex items-center justify-between px-6 py-4 border-b border-border">
         <Logo size="sm" />
         <div className="flex items-center gap-3">
-          <ThemeToggle />
           {isLoggedIn ? (
             <Link href="/dashboard">
               <Button size="sm" className="gap-1.5">

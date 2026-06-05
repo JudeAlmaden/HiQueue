@@ -51,10 +51,6 @@ export function LoginForm() {
       className="min-h-screen flex"
       style={{ backgroundColor: "var(--background)", color: "var(--on-surface)" }}
     >
-      <div className="absolute top-4 right-4 z-50">
-        <ThemeToggle />
-      </div>
-
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 md:p-16">
         <div className="w-full max-w-md space-y-8">
           <div className="flex flex-col space-y-3">

@@ -91,7 +91,7 @@ export function ThemeSelector({ currentTheme, onChange, onOpenCustomColors }: Th
     
     onChange({
       themeClass: themeOption.themeClass || undefined,
-      mode: themeOption.id === "custom" ? undefined : currentTheme.mode,
+      mode: themeOption.id === "custom" ? "light" : currentTheme.mode,
       cssVars: shouldClearVars ? undefined : currentTheme.cssVars,
     })
   }

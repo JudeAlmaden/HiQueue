@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { registerUser } from "@/server/actions/auth.action"
 import { useState } from "react"
 import Link from "next/link"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { Logo } from "@/components/Logo"
 import { Globe, Apple, ArrowRight, Loader2 } from "lucide-react"
 
@@ -38,11 +37,6 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: "var(--background)" }}>
-      {/* Theme Toggle */}
-      <div className="absolute top-6 right-6 z-50">
-        <ThemeToggle />
-      </div>
-
       {/* Left Panel - Visual/Image Section */}
       <div 
         className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center p-12"
