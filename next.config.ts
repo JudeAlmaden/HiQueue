@@ -6,7 +6,12 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
+    // Optimize for faster edge routing
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-tabs'],
   },
+  // Optimize production builds
+  compress: true,
+  poweredByHeader: false,
 };
 
 export default nextConfig;
