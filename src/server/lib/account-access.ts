@@ -1,18 +1,17 @@
 import { db } from "@/server/lib/db"
 
-/** Workspace owners self-register at /login; staff are created by an admin (createdById set). */
-export function isWorkspaceOwner(createdById: string | null | undefined): boolean {
-  return createdById == null
+export function isWorkspaceOwner(_createdById: string | null | undefined): boolean {
+  return true
 }
 
 export async function getStaffPortalLoginPath(userId: string): Promise<string | null> {
-  const membership = await db.organizationMembership.findUnique({
-    where: { userId },
+  const staff = await db.staffUser.findUnique({
+    where: { id: userId },
     include: { organization: { select: { slug: true } } },
   })
 
-  if (!membership) return null
-  return `/org/${membership.organization.slug}/login`
+  if (!staff) return null
+  return `/org/${staff.organization.slug}/login`
 }
 
 export async function requireWorkspaceOwner(userId: string): Promise<{
@@ -21,10 +20,10 @@ export async function requireWorkspaceOwner(userId: string): Promise<{
 }> {
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { createdById: true },
+    select: { id: true },
   })
 
-  if (!user || !isWorkspaceOwner(user.createdById)) {
+  if (!user) {
     const staffPortalPath = await getStaffPortalLoginPath(userId)
     return { allowed: false, staffPortalPath }
   }

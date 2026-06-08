@@ -24,17 +24,17 @@ export async function updatePortalTheme(
     }
 
     // Verify user is a member of the organization and has permission
-    const membership = await db.organizationMembership.findUnique({
-      where: { userId_organizationId: { userId, organizationId } },
+    const user = await db.user.findUnique({
+      where: { id: userId },
       select: { organizationId: true, role: true },
     })
 
-    if (!membership || membership.organizationId !== organizationId) {
+    if (!user || user.organizationId !== organizationId) {
       return { success: false, error: "Not authorized to modify this organization" }
     }
 
     // Only owners can modify portal settings
-    if (membership.role !== "owner") {
+    if (user.role !== "owner") {
       return { success: false, error: "Insufficient permissions. Only the owner can customize the portal." }
     }
 
@@ -159,17 +159,17 @@ export async function updatePortalBranding(
     }
 
     // Verify user is a member of the organization and has permission
-    const membership = await db.organizationMembership.findUnique({
-      where: { userId_organizationId: { userId, organizationId } },
+    const user = await db.user.findUnique({
+      where: { id: userId },
       select: { organizationId: true, role: true },
     })
 
-    if (!membership || membership.organizationId !== organizationId) {
+    if (!user || user.organizationId !== organizationId) {
       return { success: false, error: "Not authorized to modify this organization" }
     }
 
     // Only owners can modify portal settings
-    if (membership.role !== "owner") {
+    if (user.role !== "owner") {
       return { success: false, error: "Insufficient permissions. Only the owner can customize the portal." }
     }
 
@@ -210,17 +210,17 @@ export async function resetPortalCustomization(
     }
 
     // Verify user is a member of the organization and has permission
-    const membership = await db.organizationMembership.findUnique({
-      where: { userId_organizationId: { userId, organizationId } },
+    const user = await db.user.findUnique({
+      where: { id: userId },
       select: { organizationId: true, role: true },
     })
 
-    if (!membership || membership.organizationId !== organizationId) {
+    if (!user || user.organizationId !== organizationId) {
       return { success: false, error: "Not authorized to modify this organization" }
     }
 
     // Only owners can modify portal settings
-    if (membership.role !== "owner") {
+    if (user.role !== "owner") {
       return { success: false, error: "Insufficient permissions. Only the owner can reset the portal." }
     }
 

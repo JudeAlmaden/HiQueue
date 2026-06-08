@@ -18,12 +18,12 @@ export async function createOrganization(input: CreateOrganizationInput, userId:
 
 export async function updateOrganization(input: UpdateOrganizationInput, userId: string) {
   try {
-    // Verify the user is an owner of this org before updating
     const { db } = await import("@/server/lib/db")
-    const membership = await db.organizationMembership.findUnique({
-      where: { userId_organizationId: { userId, organizationId: input.id } },
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { organizationId: true, role: true },
     })
-    if (!membership || membership.role !== "owner") {
+    if (!user || user.organizationId !== input.id || user.role !== "owner") {
       return fail("You don't have permission to update this organization")
     }
     const org = await orgRepo.updateOrganization(input.id, { name: input.name })
@@ -35,12 +35,12 @@ export async function updateOrganization(input: UpdateOrganizationInput, userId:
 
 export async function deleteOrganization(id: string, userId: string) {
   try {
-    // Verify the user is an owner of this org before deleting
     const { db } = await import("@/server/lib/db")
-    const membership = await db.organizationMembership.findUnique({
-      where: { userId_organizationId: { userId, organizationId: id } },
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { organizationId: true, role: true },
     })
-    if (!membership || membership.role !== "owner") {
+    if (!user || user.organizationId !== id || user.role !== "owner") {
       return fail("You don't have permission to delete this organization")
     }
     await orgRepo.deleteOrganization(id)

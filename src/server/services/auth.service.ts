@@ -3,12 +3,9 @@ import { redirect } from "next/navigation"
 import { AuthError } from "next-auth"
 import { signIn } from "@/server/lib/auth"
 import { db } from "@/server/lib/db"
+import type { Prisma } from "@prisma/client"
 import { findUserByEmail, createUser } from "@/server/repositories/user.repo"
 import { fail } from "@/server/lib/action-utils"
-import {
-  getStaffPortalLoginPath,
-  isWorkspaceOwner,
-} from "@/server/lib/account-access"
 import type { LoginInput, RegisterInput } from "@/server/validators/auth"
 
 export async function registerUser(data: RegisterInput) {
@@ -34,9 +31,23 @@ export async function loginUser(
   options?: { orgSlug?: string | null }
 ) {
   const orgSlug = options?.orgSlug?.trim() || null
-  const user = await findUserByEmail(data.email)
+  const email = data.email.trim().toLowerCase()
 
-  if (!user?.password) {
+  // Try to find owner
+  const owner = await findUserByEmail(email)
+
+  // Try to find staff
+  let staff: (Prisma.StaffUserGetPayload<{ include: { organization: true } }>) | null = null
+  if (!owner) {
+    staff = await db.staffUser.findFirst({
+      where: { email },
+      include: { organization: true },
+    })
+  }
+
+  const user = owner || staff
+
+  if (!user || !user.password) {
     return fail(
       orgSlug
         ? "Invalid email or password for this workspace."
@@ -54,21 +65,34 @@ export async function loginUser(
   }
 
   if (orgSlug) {
-    const membership = await db.organizationMembership.findFirst({
-      where: { userId: user.id },
-      include: { organization: { select: { slug: true } } },
-    })
-
-    if (!membership || membership.organization.slug !== orgSlug) {
-      return fail("You do not have access to this workspace.")
+    // Portal login intent
+    if (owner) {
+      // Owner logging into portal
+      const userWithOrg = await db.user.findFirst({
+        where: { id: owner.id },
+        include: { organization: { select: { slug: true } } },
+      })
+      if (!userWithOrg || !userWithOrg.organization || userWithOrg.organization.slug !== orgSlug) {
+        return fail("You do not have access to this workspace.")
+      }
+    } else {
+      // Staff logging into portal
+      if (!staff || staff.organization.slug !== orgSlug) {
+        return fail("You do not have access to this workspace.")
+      }
     }
-  } else if (!isWorkspaceOwner(user.createdById)) {
-    const portalPath = await getStaffPortalLoginPath(user.id)
-    return fail(
-      portalPath
-        ? `This is a staff account. Sign in at your organization portal: ${portalPath}`
-        : "This is a staff account. Use your organization's staff portal to sign in."
-    )
+  } else {
+    // Dashboard login intent
+    if (!owner) {
+      // Staff trying to login to dashboard
+      if (!staff) {
+        return fail("Invalid email or password.")
+      }
+      const portalPath = `/org/${staff.organization.slug}/login`
+      return fail(
+        `This is a staff account. Sign in at your organization portal: ${portalPath}`
+      )
+    }
   }
 
   try {

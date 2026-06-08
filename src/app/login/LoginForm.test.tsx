@@ -32,7 +32,7 @@ describe('LoginForm', () => {
   it('should show spinner when form is submitted', async () => {
     // Mock loginUser to delay response
     const mockLoginUser = vi.mocked(loginUser)
-    mockLoginUser.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ success: false, error: 'Test error' }), 100)))
+    mockLoginUser.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ success: false, error: 'Test error' }), 1000)))
 
     render(<LoginForm />)
 

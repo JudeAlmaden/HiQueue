@@ -29,15 +29,16 @@ export async function createMember(
   userId: string
 ): Promise<ActionResult<{ id: string; name: string; email: string | null }>> {
   try {
-    const membership = await db.organizationMembership.findUnique({
-      where: { userId_organizationId: { userId, organizationId: input.organizationId } },
+    const currentUser = await db.user.findUnique({
+      where: { id: userId },
+      select: { organizationId: true, role: true },
     })
 
-    if (!membership) {
+    if (!currentUser || currentUser.organizationId !== input.organizationId) {
       return fail("You are not a member of this organization")
     }
 
-    if (membership.role !== "owner") {
+    if (currentUser.role !== "owner") {
       return fail("Only organization owners have permission to add members or assign roles.")
     }
 
@@ -108,27 +109,47 @@ export async function updateMember(
   organizationId: string
 ): Promise<ActionResult<void>> {
   try {
-    const membership = await db.organizationMembership.findUnique({
-      where: { userId_organizationId: { userId, organizationId } },
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { organizationId: true, role: true },
     })
 
-    if (!membership) {
+    if (!user || user.organizationId !== organizationId) {
       return fail("You are not a member of this organization")
     }
 
-    if (membership.role !== "owner") {
+    if (user.role !== "owner") {
       return fail("Only organization owners have permission to edit members or modify roles.")
     }
 
-    const targetMembership = await db.organizationMembership.findUnique({
-      where: { userId_organizationId: { userId: input.id, organizationId } },
+    // Find target in StaffUser first
+    const staff = await db.staffUser.findUnique({
+      where: { id: input.id },
     })
 
-    if (!targetMembership) {
+    let targetRole: string | null = null
+    let targetOrgId: string | null = null
+
+    if (staff) {
+      targetRole = staff.role
+      targetOrgId = staff.organizationId
+    } else {
+      // Check if they are owner in User
+      const targetUser = await db.user.findUnique({
+        where: { id: input.id },
+        select: { role: true, organizationId: true },
+      })
+      if (targetUser) {
+        targetRole = targetUser.role
+        targetOrgId = targetUser.organizationId
+      }
+    }
+
+    if (!targetOrgId || targetOrgId !== organizationId) {
       return fail("Member not found or does not belong to this organization")
     }
 
-    if (targetMembership.role === "owner" && input.role !== undefined) {
+    if (targetRole === "owner" && input.role !== undefined) {
       return fail("Organization owner roles cannot be changed from member management.")
     }
 
@@ -174,15 +195,16 @@ export async function deleteMember(
   userId: string
 ): Promise<ActionResult<void>> {
   try {
-    const membership = await db.organizationMembership.findUnique({
-      where: { userId_organizationId: { userId, organizationId: input.organizationId } },
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { organizationId: true, role: true },
     })
 
-    if (!membership) {
+    if (!user || user.organizationId !== input.organizationId) {
       return fail("You are not a member of this organization")
     }
 
-    if (membership.role !== "owner") {
+    if (user.role !== "owner") {
       return fail("Only organization owners have permission to remove members.")
     }
 
@@ -190,20 +212,33 @@ export async function deleteMember(
       return fail("Organization owners cannot remove themselves from member management.")
     }
 
-    const targetMembership = await db.organizationMembership.findUnique({
-      where: {
-        userId_organizationId: {
-          userId: input.id,
-          organizationId: input.organizationId,
-        },
-      },
+    // Find target in StaffUser first
+    const staff = await db.staffUser.findUnique({
+      where: { id: input.id },
     })
 
-    if (!targetMembership) {
+    let targetRole: string | null = null
+    let targetOrgId: string | null = null
+
+    if (staff) {
+      targetRole = staff.role
+      targetOrgId = staff.organizationId
+    } else {
+      const targetUser = await db.user.findUnique({
+        where: { id: input.id },
+        select: { role: true, organizationId: true },
+      })
+      if (targetUser) {
+        targetRole = targetUser.role
+        targetOrgId = targetUser.organizationId
+      }
+    }
+
+    if (!targetOrgId || targetOrgId !== input.organizationId) {
       return fail("Member not found or does not belong to this organization")
     }
 
-    if (targetMembership.role === "owner") {
+    if (targetRole === "owner") {
       return fail("Organization owners cannot be removed from member management.")
     }
 

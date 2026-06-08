@@ -31,7 +31,7 @@ const baseQueue = {
     },
   ],
   counters: [],
-  organization: { id: "org-1", name: "Test Org", slug: "test-org" },
+  organization: { id: "org-1", name: "Test Org", slug: "test-org", portalTheme: "{}", portalBranding: "{}" },
 }
 
 // ── verifyKioskPasscodeAction ─────────────────────────────────────────────
@@ -99,6 +99,7 @@ describe("createTicketAction", () => {
     calledAt: null,
     startedAt: null,
     completedAt: null,
+    counterId: null,
   }
 
   beforeEach(() => {

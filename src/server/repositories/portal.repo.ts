@@ -30,14 +30,23 @@ export async function getOrgPortalBySlug(slug: string): Promise<OrgPortalContext
 }
 
 export async function verifyOrgMembership(userId: string, organizationId: string) {
-  const membership = await db.organizationMembership.findUnique({
-    where: { userId },
+  const staff = await db.staffUser.findUnique({
+    where: { id: userId },
     select: { organizationId: true, role: true },
   })
 
-  if (!membership || membership.organizationId !== organizationId) {
+  if (staff && staff.organizationId === organizationId) {
+    return staff
+  }
+
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { organizationId: true, role: true },
+  })
+
+  if (!user || user.organizationId !== organizationId) {
     return null
   }
 
-  return membership
+  return user
 }

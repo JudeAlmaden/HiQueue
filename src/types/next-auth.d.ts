@@ -6,13 +6,17 @@ declare module "next-auth" {
       id: string
       /** True for accounts created via /register (workspace owners). */
       isWorkspaceOwner: boolean
-      /** Set for staff accounts — used to redirect away from /dashboard */
       orgSlug?: string | null
+      userType?: "owner" | "staff"
+      role?: string | null
     } & DefaultSession["user"]
   }
 
   interface User {
     id: string
+    userType?: "owner" | "staff"
+    orgSlug?: string | null
+    role?: string | null
   }
 }
 
@@ -21,5 +25,7 @@ declare module "next-auth/jwt" {
     id: string
     isWorkspaceOwner?: boolean
     orgSlug?: string | null
+    userType?: "owner" | "staff"
+    role?: string | null
   }
 }

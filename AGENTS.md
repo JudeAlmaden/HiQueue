@@ -3,6 +3,8 @@ This application uses next.js version 16, app router, tailwindcss v4, biome. It 
 
 read documentation in /docs folder: use the Design.md and Schema.md + any other relevant documentation to understand the codebase. 
 
+use proper types not "unknown" and not "any"  and place it at "src/types" folder to avoid repetitive type definitions.
+
 avoid lint errors and warnings, respect the existing code style and patterns.
 
 improve existing code and performance and security, security is the highest priority.
@@ -16,3 +18,5 @@ do not modify or delete existing files unless explicitly asked to do so.
 do not reformat the code.
 
 do not touch files that are not related to the task you are working on.
+
+use proper commit messages, follow conventional commits.

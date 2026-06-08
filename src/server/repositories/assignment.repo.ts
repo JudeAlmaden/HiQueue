@@ -109,7 +109,27 @@ export async function verifyMembership(
   userId: string,
   organizationId: string
 ) {
-  return db.organizationMembership.findUnique({
-    where: { userId },
-  }).then((m) => (m?.organizationId === organizationId ? m : null))
+  const staff = await db.staffUser.findUnique({
+    where: { id: userId },
+  })
+  if (staff && staff.organizationId === organizationId) {
+    return {
+      userId: staff.id,
+      organizationId: staff.organizationId,
+      role: staff.role,
+    }
+  }
+
+  const user = await db.user.findUnique({
+    where: { id: userId },
+  })
+  if (user && user.organizationId === organizationId) {
+    return {
+      userId: user.id,
+      organizationId: user.organizationId,
+      role: user.role,
+    }
+  }
+
+  return null
 }

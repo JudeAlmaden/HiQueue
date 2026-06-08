@@ -9,7 +9,8 @@ model Organization {
   /// JSON: welcome copy, logo URL, etc. — editable from dashboard workspace settings (future)
   portalBranding String @default("{}")
 
-  memberships OrganizationMembership[]
+  user       User?
+  staffUsers StaffUser[]
 
   queues        Queue[]
   subscriptions Subscription[]

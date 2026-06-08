@@ -26,14 +26,12 @@ async function verifyCounterStaff(counterId: string) {
 
   let isOwner = false
   if (queue) {
-    const membership = await db.organizationMembership.findFirst({
-      where: {
-        userId,
-        organizationId: queue.organizationId,
-      },
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { organizationId: true, role: true },
     })
-    if (membership) {
-      isOwner = membership.role === "owner"
+    if (user && user.organizationId === queue.organizationId) {
+      isOwner = user.role === "owner"
     }
   }
 

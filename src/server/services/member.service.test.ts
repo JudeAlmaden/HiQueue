@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest"
+import type { Prisma } from "@prisma/client"
 import * as memberService from "./member.service"
 import * as memberRepo from "@/server/repositories/member.repo"
 import { db } from "@/server/lib/db"
@@ -7,8 +8,12 @@ import { db } from "@/server/lib/db"
 vi.mock("@/server/repositories/member.repo")
 vi.mock("@/server/lib/db", () => ({
   db: {
-    organizationMembership: {
+    user: {
       findUnique: vi.fn(),
+    },
+    staffUser: {
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
     },
     counter: {
       count: vi.fn(),
@@ -24,7 +29,7 @@ describe("MemberService", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(memberRepo.getOrganizationMembers).mockResolvedValue([])
-    vi.mocked(memberRepo.softDeleteMember).mockResolvedValue(undefined as unknown as void)
+    vi.mocked(memberRepo.softDeleteMember).mockResolvedValue(undefined as unknown as Prisma.StaffUserGetPayload<object>)
     vi.mocked(db.counter.count).mockResolvedValue(0)
   })
 
@@ -39,14 +44,11 @@ describe("MemberService", () => {
 
     it("should create member with valid data when user is owner", async () => {
       // Mock user is owner
-      vi.mocked(db.organizationMembership.findUnique).mockResolvedValue({
-        id: "membership-1",
-        userId: mockUserId,
-        organizationId: mockOrgId,
+      vi.mocked(db.user.findUnique).mockResolvedValue({
+        id: mockUserId,
         role: "owner",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+        organizationId: mockOrgId,
+      } as any)
 
       // Mock no existing member
       vi.mocked(memberRepo.findMemberByEmail).mockResolvedValue(null)
@@ -58,13 +60,12 @@ describe("MemberService", () => {
         name: "John Doe",
         email: "john@example.com",
         password: "hashed",
-        emailVerified: null,
-        image: null,
+        role: "staff",
         isActive: true,
-        createdById: mockUserId,
+        organizationId: mockOrgId,
+        deletedAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        deletedAt: null,
       })
 
       const result = await memberService.createMember(validInput, mockUserId)
@@ -77,14 +78,11 @@ describe("MemberService", () => {
 
     it("should reject member creation when user is admin", async () => {
       // Mock user is admin
-      vi.mocked(db.organizationMembership.findUnique).mockResolvedValue({
-        id: "membership-1",
-        userId: mockUserId,
-        organizationId: mockOrgId,
+      vi.mocked(db.user.findUnique).mockResolvedValue({
+        id: mockUserId,
         role: "admin",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+        organizationId: mockOrgId,
+      } as any)
 
       const result = await memberService.createMember(validInput, mockUserId)
 
@@ -96,7 +94,7 @@ describe("MemberService", () => {
     })
 
     it("should reject if user is not a member of organization", async () => {
-      vi.mocked(db.organizationMembership.findUnique).mockResolvedValue(null)
+      vi.mocked(db.user.findUnique).mockResolvedValue(null)
 
       const result = await memberService.createMember(validInput, mockUserId)
 
@@ -107,14 +105,11 @@ describe("MemberService", () => {
     })
 
     it("should reject if user is staff", async () => {
-      vi.mocked(db.organizationMembership.findUnique).mockResolvedValue({
-        id: "membership-1",
-        userId: mockUserId,
-        organizationId: mockOrgId,
+      vi.mocked(db.user.findUnique).mockResolvedValue({
+        id: mockUserId,
         role: "staff",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+        organizationId: mockOrgId,
+      } as any)
 
       const result = await memberService.createMember(validInput, mockUserId)
 
@@ -125,28 +120,29 @@ describe("MemberService", () => {
     })
 
     it("should reject if email already exists in organization", async () => {
-      vi.mocked(db.organizationMembership.findUnique).mockResolvedValue({
-        id: "membership-1",
-        userId: mockUserId,
-        organizationId: mockOrgId,
+      vi.mocked(db.user.findUnique).mockResolvedValue({
+        id: mockUserId,
         role: "owner",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+        organizationId: mockOrgId,
+      } as any)
 
       vi.mocked(memberRepo.findMemberByEmail).mockResolvedValue({
         id: "existing-user",
         name: "Existing User",
         email: "john@example.com",
-        password: "hashed",
-        emailVerified: null,
-        image: null,
         isActive: true,
-        createdById: null,
+        createdById: "owner",
         createdAt: new Date(),
         updatedAt: new Date(),
-        deletedAt: null,
-        memberships: [],
+        memberships: [
+          {
+            id: "existing-user",
+            role: "staff",
+            organizationId: mockOrgId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }
+        ]
       })
 
       const result = await memberService.createMember(validInput, mockUserId)
@@ -165,25 +161,26 @@ describe("MemberService", () => {
     }
 
     it("should delete member when user is owner", async () => {
-      vi.mocked(db.organizationMembership.findUnique)
-        .mockResolvedValueOnce({
-          id: "membership-1",
-          userId: mockUserId,
-          organizationId: mockOrgId,
-          role: "owner",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .mockResolvedValueOnce({
-          id: "membership-2",
-          userId: mockMemberId,
-          organizationId: mockOrgId,
-          role: "staff",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
+      vi.mocked(db.user.findUnique).mockResolvedValue({
+        id: mockUserId,
+        role: "owner",
+        organizationId: mockOrgId,
+      } as any)
 
-      vi.mocked(memberRepo.softDeleteMember).mockResolvedValue(undefined as unknown as void)
+      vi.mocked(db.staffUser.findUnique).mockResolvedValue({
+        id: mockMemberId,
+        role: "staff",
+        organizationId: mockOrgId,
+        name: "Staff Member",
+        email: "staff@example.com",
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        password: "hashed",
+        deletedAt: null,
+      })
+
+      vi.mocked(memberRepo.softDeleteMember).mockResolvedValue(undefined as unknown as Prisma.StaffUserGetPayload<object>)
 
       const result = await memberService.deleteMember(deleteInput, mockUserId)
 
@@ -191,14 +188,11 @@ describe("MemberService", () => {
     })
 
     it("should reject if admin tries to remove a member", async () => {
-      vi.mocked(db.organizationMembership.findUnique).mockResolvedValue({
-        id: "membership-1",
-        userId: mockUserId,
-        organizationId: mockOrgId,
+      vi.mocked(db.user.findUnique).mockResolvedValue({
+        id: mockUserId,
         role: "admin",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+        organizationId: mockOrgId,
+      } as any)
 
       const result = await memberService.deleteMember(deleteInput, mockUserId)
 
@@ -209,14 +203,11 @@ describe("MemberService", () => {
     })
 
     it("should reject if user is staff", async () => {
-      vi.mocked(db.organizationMembership.findUnique).mockResolvedValue({
-        id: "membership-1",
-        userId: mockUserId,
-        organizationId: mockOrgId,
+      vi.mocked(db.user.findUnique).mockResolvedValue({
+        id: mockUserId,
         role: "staff",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+        organizationId: mockOrgId,
+      } as any)
 
       const result = await memberService.deleteMember(deleteInput, mockUserId)
 

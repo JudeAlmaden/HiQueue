@@ -6,7 +6,6 @@ import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { authConfig } from "./auth.config"
 import { db } from "@/server/lib/db"
-import { isWorkspaceOwner } from "@/server/lib/account-access"
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase()
@@ -35,43 +34,92 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const loginIntent = credentials.loginIntent as string | undefined
         const orgSlug = (credentials.orgSlug as string | undefined)?.trim() || undefined
 
-        const user = await db.user.findUnique({
-          where: { email },
-        })
-
-        if (!user?.password) {
-          return null
-        }
-
-        const passwordsMatch = await bcrypt.compare(password, user.password)
-        if (!passwordsMatch) {
-          return null
-        }
-
         if (loginIntent === "portal") {
           if (!orgSlug) return null
 
-          const membership = await db.organizationMembership.findFirst({
-            where: { userId: user.id },
+          // First: check StaffUser table (staff/admin created by an owner)
+          const staffUser = await db.staffUser.findFirst({
+            where: {
+              email,
+              organization: { slug: orgSlug },
+            },
             include: { organization: { select: { slug: true } } },
           })
 
-          if (!membership || membership.organization.slug !== orgSlug) {
-            return null
+          if (staffUser) {
+            if (!staffUser.password || !staffUser.isActive || staffUser.deletedAt) {
+              return null
+            }
+            const passwordsMatch = await bcrypt.compare(password, staffUser.password)
+            if (!passwordsMatch) return null
+            if (staffUser.organization.slug !== orgSlug) return null
+
+            return {
+              id: staffUser.id,
+              email: staffUser.email,
+              name: staffUser.name,
+              userType: "staff" as const,
+              orgSlug: staffUser.organization.slug,
+              role: staffUser.role,
+            }
           }
-        } else if (loginIntent === "dashboard") {
-          if (!isWorkspaceOwner(user.createdById)) {
-            return null
+
+          // Fallback: check if a workspace owner is logging into their own portal
+          const ownerUser = await db.user.findUnique({
+            where: { email },
+            include: { organization: { select: { slug: true } } },
+          })
+
+          if (ownerUser) {
+            if (!ownerUser.password || !ownerUser.isActive || ownerUser.deletedAt) {
+              return null
+            }
+            const passwordsMatch = await bcrypt.compare(password, ownerUser.password)
+            if (!passwordsMatch) return null
+
+            // Verify they own / are a member of this org via slug
+            if (!ownerUser.organization || ownerUser.organization.slug !== orgSlug) {
+              return null
+            }
+
+            return {
+              id: ownerUser.id,
+              email: ownerUser.email,
+              name: ownerUser.name,
+              userType: "owner" as const,
+              orgSlug: ownerUser.organization.slug,
+              role: ownerUser.role,
+            }
           }
-        } else {
+
           return null
         }
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
+        if (loginIntent === "dashboard") {
+          const ownerUser = await db.user.findUnique({
+            where: { email },
+            include: { organization: { select: { slug: true } } },
+          })
+
+          if (!ownerUser) return null
+          if (!ownerUser.password || !ownerUser.isActive || ownerUser.deletedAt) {
+            return null
+          }
+
+          const passwordsMatch = await bcrypt.compare(password, ownerUser.password)
+          if (!passwordsMatch) return null
+
+          return {
+            id: ownerUser.id,
+            email: ownerUser.email,
+            name: ownerUser.name,
+            userType: "owner" as const,
+            orgSlug: ownerUser.organization?.slug ?? null,
+            role: ownerUser.role,
+          }
         }
+
+        return null
       },
     }),
   ],
@@ -79,49 +127,50 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }: { token: JWT; user?: User }) {
       if (user?.id) {
         token.id = user.id
+        const userType = user.userType || "owner"
+        token.userType = userType
+        token.orgSlug = user.orgSlug ?? null
+        token.role = user.role ?? null
+        token.isWorkspaceOwner = userType === "owner"
 
-        const dbUser = await db.user.findUnique({
-          where: { id: user.id },
-          select: { createdById: true, isActive: true, deletedAt: true },
-        })
-
-        // Auto-logout if user is deleted or deactivated
-        if (!dbUser || !dbUser.isActive || dbUser.deletedAt) {
-          return null as unknown as never
-        }
-
-        const owner = isWorkspaceOwner(dbUser?.createdById)
-        token.isWorkspaceOwner = owner
-
-        if (!owner) {
-          const membership = await db.organizationMembership.findFirst({
-            where: { userId: user.id },
-            include: { organization: { select: { slug: true } } },
+        if (userType === "owner") {
+          const dbUser = await db.user.findUnique({
+            where: { id: user.id },
+            select: { isActive: true, deletedAt: true },
           })
-          
-          // Auto-logout if user no longer has organization membership
-          if (!membership) {
+          if (!dbUser || !dbUser.isActive || dbUser.deletedAt) {
             return null as unknown as never
           }
-          
-          token.orgSlug = membership.organization.slug
         } else {
-          token.orgSlug = null
+          const dbStaff = await db.staffUser.findUnique({
+            where: { id: user.id },
+            select: { isActive: true, deletedAt: true },
+          })
+          if (!dbStaff || !dbStaff.isActive || dbStaff.deletedAt) {
+            return null as unknown as never
+          }
         }
       } else if (token.id) {
         // Validate existing token on every request
         try {
-          const dbUser = await db.user.findUnique({
-            where: { id: token.id as string },
-            select: { isActive: true, deletedAt: true },
-          })
-
-          // Auto-logout if user was deleted or deactivated
-          if (!dbUser || !dbUser.isActive || dbUser.deletedAt) {
-            return null as unknown as never
+          if (token.userType === "owner") {
+            const dbUser = await db.user.findUnique({
+              where: { id: token.id as string },
+              select: { isActive: true, deletedAt: true },
+            })
+            if (!dbUser || !dbUser.isActive || dbUser.deletedAt) {
+              return null as unknown as never
+            }
+          } else {
+            const dbStaff = await db.staffUser.findUnique({
+              where: { id: token.id as string },
+              select: { isActive: true, deletedAt: true },
+            })
+            if (!dbStaff || !dbStaff.isActive || dbStaff.deletedAt) {
+              return null as unknown as never
+            }
           }
         } catch (error) {
-          // Database error - force logout for safety
           console.error("Error validating user session:", error)
           return null as unknown as never
         }
@@ -129,7 +178,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token
     },
     async session({ session, token }: { session: Session; token: JWT }) {
-      // If token is null (user deleted/deactivated), return null session
       if (!token || !token.id) {
         return null as unknown as never
       }
@@ -138,6 +186,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string
         session.user.isWorkspaceOwner = token.isWorkspaceOwner === true
         session.user.orgSlug = (token.orgSlug as string | null) ?? null
+        session.user.userType = token.userType
+        session.user.role = token.role
       }
       return session
     },

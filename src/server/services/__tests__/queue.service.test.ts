@@ -6,7 +6,10 @@ import { db } from "@/server/lib/db"
 vi.mock("@/server/repositories/queue.repo")
 vi.mock("@/server/lib/db", () => ({
   db: {
-    organizationMembership: {
+    user: {
+      findUnique: vi.fn(),
+    },
+    staffUser: {
       findUnique: vi.fn(),
     },
     queue: {
@@ -33,14 +36,11 @@ describe("QueueService", () => {
     }
 
     it("should create queue with valid data and permission", async () => {
-      vi.mocked(db.organizationMembership.findUnique).mockResolvedValue({
-        id: "membership-1",
-        userId: mockUserId,
-        organizationId: mockOrgId,
+      vi.mocked(db.user.findUnique).mockResolvedValue({
+        id: mockUserId,
         role: "owner",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+        organizationId: mockOrgId,
+      } as any)
 
       vi.mocked(queueRepo.getOrganizationQueues).mockResolvedValue([])
       vi.mocked(queueRepo.createQueue).mockResolvedValue({
@@ -60,14 +60,11 @@ describe("QueueService", () => {
     })
 
     it("should reject if admin tries to create a queue", async () => {
-      vi.mocked(db.organizationMembership.findUnique).mockResolvedValue({
-        id: "membership-1",
-        userId: mockUserId,
-        organizationId: mockOrgId,
+      vi.mocked(db.user.findUnique).mockResolvedValue({
+        id: mockUserId,
         role: "admin",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+        organizationId: mockOrgId,
+      } as any)
 
       const result = await queueService.createQueue(validInput, mockUserId)
       expect(result.success).toBe(false)
@@ -78,14 +75,11 @@ describe("QueueService", () => {
     })
 
     it("should reject if name is duplicate", async () => {
-      vi.mocked(db.organizationMembership.findUnique).mockResolvedValue({
-        id: "membership-1",
-        userId: mockUserId,
-        organizationId: mockOrgId,
+      vi.mocked(db.user.findUnique).mockResolvedValue({
+        id: mockUserId,
         role: "owner",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+        organizationId: mockOrgId,
+      } as any)
 
       vi.mocked(queueRepo.getOrganizationQueues).mockResolvedValue([
         {
@@ -111,14 +105,11 @@ describe("QueueService", () => {
 
   describe("deleteQueue", () => {
     it("should reject if queue has active tickets", async () => {
-      vi.mocked(db.organizationMembership.findUnique).mockResolvedValue({
-        id: "membership-1",
-        userId: mockUserId,
-        organizationId: mockOrgId,
+      vi.mocked(db.user.findUnique).mockResolvedValue({
+        id: mockUserId,
         role: "owner",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+        organizationId: mockOrgId,
+      } as any)
 
       vi.mocked(queueRepo.countActiveTickets).mockResolvedValue(5)
       vi.mocked(db.queue.findUnique).mockResolvedValue({

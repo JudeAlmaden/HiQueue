@@ -48,8 +48,8 @@ export function CreateMemberForm({ organizationId, orgSlug, onClose }: Props) {
       const res = await createMemberAction(formData)
       if (res.success) {
         toasts.success("Member added successfully!")
-        router.refresh()
         onClose()
+        router.refresh()
       } else {
         setError(res.error)
       }

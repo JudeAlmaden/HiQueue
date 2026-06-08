@@ -57,8 +57,8 @@ export function EditMemberForm({ member, organizationId, orgSlug, onClose }: Pro
       const res = await updateMemberAction(formData)
       if (res.success) {
         toasts.success("Member updated successfully!")
-        router.refresh()
         onClose()
+        router.refresh()
       } else {
         setError(res.error)
       }

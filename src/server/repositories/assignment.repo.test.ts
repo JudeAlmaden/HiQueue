@@ -41,29 +41,22 @@ describe("Assignment Repository", () => {
     })
     testCounterId = counter.id
 
-    // Create a test user
-    const user = await db.user.create({
+    // Create a test staff user
+    const staff = await db.staffUser.create({
       data: {
         name: "Test Staff",
         email: `test-staff-${Date.now()}-${Math.random()}@example.com`,
         password: "hashedpassword",
-      },
-    })
-    testUserId = user.id
-
-    // Create organization membership for the user
-    await db.organizationMembership.create({
-      data: {
-        userId: testUserId,
         organizationId: testOrgId,
         role: "staff",
       },
     })
+    testUserId = staff.id
   })
 
   afterEach(async () => {
     // Clean up: delete all test data
-    await db.organizationMembership.deleteMany({
+    await db.staffUser.deleteMany({
       where: { organizationId: testOrgId },
     })
     await db.counter.deleteMany({
@@ -74,9 +67,6 @@ describe("Assignment Repository", () => {
     })
     await db.organization.delete({
       where: { id: testOrgId },
-    })
-    await db.user.delete({
-      where: { id: testUserId },
     })
   })
 
@@ -91,18 +81,12 @@ describe("Assignment Repository", () => {
     })
 
     it("should allow assigning multiple staff members to the same counter", async () => {
-      // Create another user
-      const user2 = await db.user.create({
+      // Create another staff user
+      const user2 = await db.staffUser.create({
         data: {
           name: "Test Staff 2",
           email: `test-staff-2-${Date.now()}-${Math.random()}@example.com`,
           password: "hashedpassword",
-        },
-      })
-
-      await db.organizationMembership.create({
-        data: {
-          userId: user2.id,
           organizationId: testOrgId,
           role: "staff",
         },
@@ -119,15 +103,7 @@ describe("Assignment Repository", () => {
       expect(result.assignedStaff.map((s) => s.id)).toContain(user2.id)
 
       // Clean up
-      await db.organizationMembership.delete({
-        where: {
-          userId_organizationId: {
-            userId: user2.id,
-            organizationId: testOrgId,
-          },
-        },
-      })
-      await db.user.delete({
+      await db.staffUser.delete({
         where: { id: user2.id },
       })
     })
@@ -175,18 +151,12 @@ describe("Assignment Repository", () => {
     })
 
     it("should only unassign the specified staff member", async () => {
-      // Create another user
-      const user2 = await db.user.create({
+      // Create another staff user
+      const user2 = await db.staffUser.create({
         data: {
           name: "Test Staff 2",
           email: `test-staff-2-${Date.now()}-${Math.random()}@example.com`,
           password: "hashedpassword",
-        },
-      })
-
-      await db.organizationMembership.create({
-        data: {
-          userId: user2.id,
           organizationId: testOrgId,
           role: "staff",
         },
@@ -203,15 +173,7 @@ describe("Assignment Repository", () => {
       expect(result.assignedStaff[0].id).toBe(user2.id)
 
       // Clean up
-      await db.organizationMembership.delete({
-        where: {
-          userId_organizationId: {
-            userId: user2.id,
-            organizationId: testOrgId,
-          },
-        },
-      })
-      await db.user.delete({
+      await db.staffUser.delete({
         where: { id: user2.id },
       })
     })

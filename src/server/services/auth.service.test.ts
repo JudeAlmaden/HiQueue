@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, beforeAll, vi } from "vitest"
+import type { Prisma } from "@prisma/client"
 import * as userRepo from "@/server/repositories/user.repo"
 import { db } from "@/server/lib/db"
 import { signIn } from "@/server/lib/auth"
@@ -34,7 +35,12 @@ vi.mock("@/server/lib/account-access", () => ({
 
 vi.mock("@/server/lib/db", () => ({
   db: {
-    organizationMembership: {
+    user: {
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+    },
+    staffUser: {
+      findFirst: vi.fn(),
       findUnique: vi.fn(),
     },
   },
@@ -135,19 +141,15 @@ describe("auth.service", () => {
     it("logs in a staff member for a workspace (portal) and redirects to /org/:slug/counter", async () => {
       const orgSlug = "sacli-140"
 
-      vi.mocked(userRepo.findUserByEmail).mockResolvedValue({
+      vi.mocked(userRepo.findUserByEmail).mockResolvedValue(null)
+      vi.mocked(db.staffUser.findFirst).mockResolvedValue({
         id: "u-2",
         email: "staff@example.com",
         password: "hashed",
-        createdById: "admin-u",
-      } as unknown as Awaited<ReturnType<typeof userRepo.findUserByEmail>>)
-      vi.mocked(bcrypt.compare).mockImplementation(() => Promise.resolve(true))
-      vi.mocked(db.organizationMembership.findUnique).mockResolvedValue({
-        id: "m-1",
-        userId: "u-2",
-        organizationId: "org-1",
+        role: "staff",
         organization: { slug: orgSlug },
-      } as unknown as Awaited<ReturnType<typeof db.organizationMembership.findUnique>>)
+      } as unknown as Prisma.StaffUserGetPayload<{ include: { organization: true } }>)
+      vi.mocked(bcrypt.compare).mockImplementation(() => Promise.resolve(true))
       vi.mocked(signIn).mockResolvedValue(undefined)
 
       await authService.loginUser(
@@ -166,14 +168,8 @@ describe("auth.service", () => {
     })
 
     it("rejects staff login when membership doesn't exist", async () => {
-      vi.mocked(userRepo.findUserByEmail).mockResolvedValue({
-        id: "u-2",
-        email: "staff@example.com",
-        password: "hashed",
-        createdById: "admin-u",
-      } as unknown as Awaited<ReturnType<typeof userRepo.findUserByEmail>>)
-      vi.mocked(bcrypt.compare).mockImplementation(() => Promise.resolve(true))
-      vi.mocked(db.organizationMembership.findUnique).mockResolvedValue(null)
+      vi.mocked(userRepo.findUserByEmail).mockResolvedValue(null)
+      vi.mocked(db.staffUser.findFirst).mockResolvedValue(null)
 
       const result = await authService.loginUser(
         { email: "staff@example.com", password: "password123" },
@@ -182,7 +178,7 @@ describe("auth.service", () => {
 
       expect(result.success).toBe(false)
       if (!result.success) {
-        expect(result.error).toContain("do not have access")
+        expect(result.error).toContain("Invalid email or password")
       }
       expect(signIn).not.toHaveBeenCalled()
       expect(redirect).not.toHaveBeenCalled()

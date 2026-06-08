@@ -29,16 +29,39 @@ export default async function StaffManagementPage({ params }: Props) {
     redirect(`/org/${slug}/counter`)
   }
 
-  // Fetch memberships
-  const orgMemberships = await db.organizationMembership.findMany({
+  // Fetch organization owner user
+  const owners = await db.user.findMany({
     where: { organizationId: org.id },
-    include: {
-      user: {
-        select: { id: true, name: true, email: true },
-      },
+    select: { id: true, name: true, email: true, role: true },
+  })
+
+  const ownerMembers = owners.map((u) => ({
+    id: u.id,
+    role: u.role,
+    user: {
+      id: u.id,
+      name: u.name,
+      email: u.email,
     },
+  }))
+
+  // Fetch staff users
+  const staffUsers = await db.staffUser.findMany({
+    where: { organizationId: org.id, deletedAt: null },
     orderBy: { createdAt: "asc" },
   })
+
+  const staffMembers = staffUsers.map((s) => ({
+    id: s.id,
+    role: s.role,
+    user: {
+      id: s.id,
+      name: s.name,
+      email: s.email,
+    },
+  }))
+
+  const allMembers = [...ownerMembers, ...staffMembers]
 
   // Fetch counters
   const allCounters = await db.counter.findMany({
@@ -89,7 +112,7 @@ export default async function StaffManagementPage({ params }: Props) {
               <h2 className="text-lg font-bold text-on-surface">Counter Assignments</h2>
             </div>
             <StaffAssignmentManager
-              members={orgMemberships}
+              members={allMembers}
               counters={allCounters}
               currentUserRole={role}
               organizationId={org.id}

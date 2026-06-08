@@ -1,5 +1,7 @@
 import { db } from "@/server/lib/db"
 import { hashPassword } from "@/server/lib/password"
+import type { Prisma } from "@prisma/client"
+import type { OrganizationMember, UserWithMembership } from "@/types/member"
 
 /**
  * Member repository — handles User and OrganizationMembership operations.
@@ -22,29 +24,18 @@ export async function createMember(
   },
   organizationId: string,
   role: string,
-  createdById: string
+  _createdById: string
 ) {
   const hashedPassword = await hashPassword(userData.password)
 
-  return db.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: {
-        name: userData.name,
-        email: userData.email,
-        password: hashedPassword,
-        createdById,
-      },
-    })
-
-    await tx.organizationMembership.create({
-      data: {
-        userId: user.id,
-        organizationId,
-        role,
-      },
-    })
-
-    return user
+  return db.staffUser.create({
+    data: {
+      name: userData.name,
+      email: userData.email.trim().toLowerCase(),
+      password: hashedPassword,
+      organizationId,
+      role,
+    },
   })
 }
 
@@ -61,9 +52,13 @@ export async function updateMemberUser(
     email?: string
   }
 ) {
-  return db.user.update({
+  const normalizedData = {
+    ...data,
+    ...(data.email ? { email: data.email.trim().toLowerCase() } : {}),
+  }
+  return db.staffUser.update({
     where: { id: userId },
-    data,
+    data: normalizedData,
   })
 }
 
@@ -79,13 +74,8 @@ export async function updateMemberRole(
   organizationId: string,
   role: string
 ) {
-  return db.organizationMembership.update({
-    where: {
-      userId_organizationId: {
-        userId,
-        organizationId,
-      },
-    },
+  return db.staffUser.update({
+    where: { id: userId },
     data: { role },
   })
 }
@@ -97,40 +87,9 @@ export async function updateMemberRole(
  * @param userId - User ID to remove
  * @param organizationId - Organization ID to remove from
  */
-export async function deleteMember(userId: string, organizationId: string) {
-  return db.$transaction(async (tx) => {
-    // Delete the membership
-    await tx.organizationMembership.delete({
-      where: {
-        userId_organizationId: {
-          userId,
-          organizationId,
-        },
-      },
-    })
-
-    // Check if user has other memberships
-    const otherMemberships = await tx.organizationMembership.findFirst({
-      where: {
-        userId,
-        organizationId: { not: organizationId },
-      },
-    })
-
-    // If no other memberships, check if user was created by another user
-    if (!otherMemberships) {
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        select: { createdById: true },
-      })
-
-      // Delete user if they were created by another user (staff member)
-      if (user?.createdById) {
-        await tx.user.delete({
-          where: { id: userId },
-        })
-      }
-    }
+export async function deleteMember(userId: string, _organizationId: string) {
+  return db.staffUser.delete({
+    where: { id: userId },
   })
 }
 
@@ -141,44 +100,13 @@ export async function deleteMember(userId: string, organizationId: string) {
  * @param userId - User ID to soft delete
  * @param organizationId - Organization ID to remove from
  */
-export async function softDeleteMember(userId: string, organizationId: string) {
-  return db.$transaction(async (tx) => {
-    // Delete the membership
-    await tx.organizationMembership.delete({
-      where: {
-        userId_organizationId: {
-          userId,
-          organizationId,
-        },
-      },
-    })
-
-    // Check if user has other memberships
-    const otherMemberships = await tx.organizationMembership.findFirst({
-      where: {
-        userId,
-        organizationId: { not: organizationId },
-      },
-    })
-
-    // If no other memberships, soft delete the user
-    if (!otherMemberships) {
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        select: { createdById: true },
-      })
-
-      // Soft delete user if they were created by another user (staff member)
-      if (user?.createdById) {
-        await tx.user.update({
-          where: { id: userId },
-          data: {
-            isActive: false,
-            deletedAt: new Date(),
-          },
-        })
-      }
-    }
+export async function softDeleteMember(userId: string, _organizationId: string) {
+  return db.staffUser.update({
+    where: { id: userId },
+    data: {
+      isActive: false,
+      deletedAt: new Date(),
+    },
   })
 }
 
@@ -187,35 +115,64 @@ export async function softDeleteMember(userId: string, organizationId: string) {
  * @param organizationId - Organization ID
  * @returns Promise resolving to array of members with user and membership data
  */
-export async function getOrganizationMembers(organizationId: string) {
-  const memberships = await db.organizationMembership.findMany({
+export async function getOrganizationMembers(organizationId: string): Promise<OrganizationMember[]> {
+  const users = await db.user.findMany({
     where: { organizationId },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          isActive: true,
-          createdById: true,
-          createdAt: true,
-        },
-      },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      isActive: true,
+      createdAt: true,
+      updatedAt: true,
+      role: true,
     },
+  })
+
+  const staffUsers = await db.staffUser.findMany({
+    where: { organizationId, isActive: true },
     orderBy: { createdAt: "asc" },
   })
 
-  return memberships.map((membership) => ({
-    user: membership.user,
+  const ownerMembers = users.map((u) => ({
+    user: {
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      isActive: u.isActive,
+      createdById: null as string | null,
+      createdAt: u.createdAt,
+    },
     membership: {
-      id: membership.id,
-      userId: membership.userId,
-      organizationId: membership.organizationId,
-      role: membership.role,
-      createdAt: membership.createdAt,
-      updatedAt: membership.updatedAt,
+      id: u.id,
+      userId: u.id,
+      organizationId,
+      role: u.role,
+      createdAt: u.createdAt,
+      updatedAt: u.updatedAt,
     },
   }))
+
+  const staffMembers = staffUsers.map((staff) => ({
+    user: {
+      id: staff.id,
+      name: staff.name,
+      email: staff.email,
+      isActive: staff.isActive,
+      createdById: "owner",
+      createdAt: staff.createdAt,
+    },
+    membership: {
+      id: staff.id,
+      userId: staff.id,
+      organizationId: staff.organizationId,
+      role: staff.role,
+      createdAt: staff.createdAt,
+      updatedAt: staff.updatedAt,
+    },
+  }))
+
+  return [...ownerMembers, ...staffMembers]
 }
 
 /**
@@ -225,36 +182,101 @@ export async function getOrganizationMembers(organizationId: string) {
  * @returns Promise resolving to User with membership or null
  */
 export async function findUserWithMembershipByEmail(email: string) {
-  return db.user.findUnique({
-    where: { email },
+  const user = await db.user.findUnique({
+    where: { email: email.trim().toLowerCase() },
     select: {
       id: true,
-      memberships: { select: { id: true } },
+      organizationId: true,
     },
   })
+  if (user) {
+    return {
+      id: user.id,
+      memberships: user.organizationId ? [{ id: user.organizationId }] : [],
+    }
+  }
+
+  const staff = await db.staffUser.findFirst({
+    where: { email: email.trim().toLowerCase() },
+    select: { id: true, organizationId: true },
+  })
+  if (staff) {
+    return {
+      id: staff.id,
+      memberships: [{ id: staff.organizationId }],
+    }
+  }
+
+  return null
 }
 
-export async function findMemberByEmail(email: string, organizationId: string) {
-  return db.user.findFirst({
+export async function findMemberByEmail(email: string, organizationId: string): Promise<UserWithMembership | null> {
+  const staff = await db.staffUser.findFirst({
     where: {
-      email,
-      memberships: {
-        some: { organizationId },
-      },
-    },
-    include: {
-      memberships: {
-        where: { organizationId },
-        select: {
-          id: true,
-          role: true,
-          organizationId: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      },
+      email: email.trim().toLowerCase(),
+      organizationId,
+      isActive: true,
     },
   })
+
+  if (staff) {
+    return {
+      id: staff.id,
+      name: staff.name,
+      email: staff.email,
+      isActive: staff.isActive,
+      createdById: "owner",
+      createdAt: staff.createdAt,
+      updatedAt: staff.updatedAt,
+      password: null,
+      emailVerified: null,
+      image: null,
+      deletedAt: null,
+      memberships: [
+        {
+          id: staff.id,
+          role: staff.role,
+          organizationId: staff.organizationId,
+          createdAt: staff.createdAt,
+          updatedAt: staff.updatedAt,
+        },
+      ],
+    }
+  }
+
+  const user = await db.user.findFirst({
+    where: {
+      email: email.trim().toLowerCase(),
+      organizationId,
+    },
+  })
+
+  if (user) {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      isActive: user.isActive,
+      createdById: null,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      password: user.password,
+      emailVerified: user.emailVerified,
+      image: user.image,
+      deletedAt: user.deletedAt,
+      memberships: [
+        {
+          id: user.id,
+          role: user.role,
+          organizationId: user.organizationId ?? organizationId,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
+      ],
+    }
+  }
+
+  return null
 }
 
 /**
@@ -264,17 +286,10 @@ export async function findMemberByEmail(email: string, organizationId: string) {
  * @returns Promise resolving to true if user has other memberships, false otherwise
  */
 export async function hasOtherMemberships(
-  userId: string,
-  excludeOrgId: string
+  _userId: string,
+  _excludeOrgId: string
 ): Promise<boolean> {
-  const count = await db.organizationMembership.count({
-    where: {
-      userId,
-      organizationId: { not: excludeOrgId },
-    },
-  })
-
-  return count > 0
+  return false
 }
 
 /**
@@ -283,10 +298,9 @@ export async function hasOtherMemberships(
  * @returns Promise resolving to true if user.createdById is not null, false otherwise
  */
 export async function wasCreatedByAnotherUser(userId: string): Promise<boolean> {
-  const user = await db.user.findUnique({
+  const staff = await db.staffUser.findUnique({
     where: { id: userId },
-    select: { createdById: true },
+    select: { id: true },
   })
-
-  return user?.createdById !== null
+  return staff !== null
 }

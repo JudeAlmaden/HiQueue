@@ -12,12 +12,25 @@ export async function getOrganizationRole(
   userId: string,
   organizationId: string
 ): Promise<OrganizationRole | null> {
-  const membership = await db.organizationMembership.findUnique({
-    where: { userId_organizationId: { userId, organizationId } },
-    select: { role: true },
+  const staff = await db.staffUser.findUnique({
+    where: { id: userId },
+    select: { role: true, organizationId: true },
   })
 
-  return isOrganizationRole(membership?.role) ? membership.role : null
+  if (staff && staff.organizationId === organizationId) {
+    return isOrganizationRole(staff.role) ? staff.role : null
+  }
+
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { role: true, organizationId: true },
+  })
+
+  if (user && user.organizationId === organizationId) {
+    return isOrganizationRole(user.role) ? (user.role as OrganizationRole) : null
+  }
+
+  return null
 }
 
 export async function hasOrganizationRole(

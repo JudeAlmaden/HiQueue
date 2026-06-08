@@ -9,7 +9,7 @@ model Counter {
 
   tickets Ticket[] @relation("CounterTickets")
 
-  assignedStaff User[] @relation("StaffAssignments")
+  assignedStaff StaffUser[] @relation("StaffAssignments")
   services      Service[]
 
   isActive Boolean @default(true)

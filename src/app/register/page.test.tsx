@@ -24,7 +24,7 @@ describe('RegisterPage', () => {
   it('should show spinner when form is submitted', async () => {
     // Mock registerUser to delay response
     const mockRegisterUser = vi.mocked(registerUser)
-    mockRegisterUser.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ success: false, error: 'Test error' }), 100)))
+    mockRegisterUser.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ success: false, error: 'Test error' }), 1000)))
 
     render(<RegisterPage />)
 

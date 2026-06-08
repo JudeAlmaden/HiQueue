@@ -66,21 +66,28 @@ function createStatusCounts() {
 }
 
 export async function getWorkspaceAnalytics(userId: string, range: AnalyticsRangeKey) {
-  const organization = await db.organization.findFirst({
-    where: {
-      memberships: {
-        some: { userId },
-      },
-    },
+  let organizationId: string | null = null
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { organizationId: true },
+  })
+  if (user?.organizationId) {
+    organizationId = user.organizationId
+  } else {
+    const staff = await db.staffUser.findUnique({
+      where: { id: userId },
+      select: { organizationId: true },
+    })
+    if (staff) {
+      organizationId = staff.organizationId
+    }
+  }
+
+  if (!organizationId) return null
+
+  const org = await db.organization.findUnique({
+    where: { id: organizationId },
     include: {
-      memberships: {
-        include: {
-          user: {
-            select: { id: true, name: true, email: true },
-          },
-        },
-        orderBy: { createdAt: "asc" },
-      },
       queues: {
         include: {
           counters: {
@@ -96,7 +103,27 @@ export async function getWorkspaceAnalytics(userId: string, range: AnalyticsRang
     },
   })
 
-  if (!organization) return null
+  if (!org) return null
+
+  const owners = await db.user.findMany({
+    where: { organizationId: org.id },
+    select: { id: true, name: true, email: true },
+  })
+
+  const staffUsers = await db.staffUser.findMany({
+    where: { organizationId: org.id, isActive: true },
+    select: { id: true, name: true, email: true },
+  })
+
+  const memberships = [
+    ...owners.map((o) => ({ user: o })),
+    ...staffUsers.map((s) => ({ user: s })),
+  ]
+
+  const organization = {
+    ...org,
+    memberships,
+  }
 
   const rangeStart = getRangeStart(range)
   const todayStart = getTodayStart()

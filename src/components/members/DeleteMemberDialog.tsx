@@ -35,8 +35,8 @@ export function DeleteMemberDialog({ memberId, memberName, organizationId, orgSl
 
       if (res.success) {
         toasts.success("Member removed successfully!")
-        router.refresh()
         onClose()
+        router.refresh()
       } else {
         setError(res.error)
       }
