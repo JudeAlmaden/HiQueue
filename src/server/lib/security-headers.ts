@@ -215,7 +215,7 @@ export interface SecurityAuditLog {
   userId?: string
   ip: string
   userAgent?: string
-  details: Record<string, any>
+  details: Record<string, unknown>
 }
 
 /**

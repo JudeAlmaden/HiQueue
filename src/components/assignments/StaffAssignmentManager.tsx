@@ -4,8 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { assignStaffAction, unassignStaffAction } from "@/server/actions/assignment.action"
 import { useToast } from "@/components/ui/toast"
-import { Users, Monitor, ShieldCheck, User, CheckSquare, Square, Loader2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Users, Monitor, CheckSquare, Square, Loader2 } from "lucide-react"
 
 interface UserDetail {
   id: string
@@ -81,7 +80,7 @@ export function StaffAssignmentManager({ members, counters, currentUserRole, org
           toasts.error(res.error || "Failed to assign staff")
         }
       }
-    } catch (err) {
+    } catch {
       toasts.error("An unexpected error occurred. Please try again.")
     } finally {
       setTogglingCounterId(null)
@@ -149,7 +148,7 @@ export function StaffAssignmentManager({ members, counters, currentUserRole, org
                   Counter Access Control
                 </h3>
                 <p className="text-[11px] text-on-surface-variant mt-0.5">
-                  Assigning: <span className="font-semibold text-on-surface">"{selectedStaff?.user.name || selectedStaff?.user.email}"</span>
+                  Assigning: <span className="font-semibold text-on-surface">&quot;{selectedStaff?.user.name || selectedStaff?.user.email}&quot;</span>
                 </p>
               </div>
             </div>
@@ -213,7 +212,7 @@ export function StaffAssignmentManager({ members, counters, currentUserRole, org
           <div className="space-y-1">
             <p className="text-sm font-bold text-on-surface">No Members Found</p>
             <p className="text-xs text-on-surface-variant max-w-xs mx-auto">
-              There are no members in this organization to assign yet. Add members in the "Members" tab.
+              There are no members in this organization to assign yet. Add members in the &quot;Members&quot; tab.
             </p>
           </div>
         </div>

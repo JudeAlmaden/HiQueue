@@ -1,4 +1,6 @@
 import NextAuth from "next-auth"
+import type { Session, User } from "next-auth"
+import type { JWT } from "next-auth/jwt"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
@@ -23,7 +25,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         orgSlug: { label: "Organization Slug", type: "text" },
         loginIntent: { label: "Login Intent", type: "text" },
       },
-      async authorize(credentials) {
+      async authorize(credentials: Record<string, unknown> | undefined) {
         if (!credentials?.email || !credentials?.password) {
           return null
         }
@@ -49,7 +51,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (loginIntent === "portal") {
           if (!orgSlug) return null
 
-          const membership = await db.organizationMembership.findUnique({
+          const membership = await db.organizationMembership.findFirst({
             where: { userId: user.id },
             include: { organization: { select: { slug: true } } },
           })
@@ -74,7 +76,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: JWT; user?: User }) {
       if (user?.id) {
         token.id = user.id
 
@@ -85,21 +87,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // Auto-logout if user is deleted or deactivated
         if (!dbUser || !dbUser.isActive || dbUser.deletedAt) {
-          return null as any // Forces session to be destroyed
+          return null as unknown as never
         }
 
         const owner = isWorkspaceOwner(dbUser?.createdById)
         token.isWorkspaceOwner = owner
 
         if (!owner) {
-          const membership = await db.organizationMembership.findUnique({
+          const membership = await db.organizationMembership.findFirst({
             where: { userId: user.id },
             include: { organization: { select: { slug: true } } },
           })
           
           // Auto-logout if user no longer has organization membership
           if (!membership) {
-            return null as any
+            return null as unknown as never
           }
           
           token.orgSlug = membership.organization.slug
@@ -116,20 +118,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           // Auto-logout if user was deleted or deactivated
           if (!dbUser || !dbUser.isActive || dbUser.deletedAt) {
-            return null as any
+            return null as unknown as never
           }
         } catch (error) {
           // Database error - force logout for safety
           console.error("Error validating user session:", error)
-          return null as any
+          return null as unknown as never
         }
       }
       return token
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       // If token is null (user deleted/deactivated), return null session
       if (!token || !token.id) {
-        return null as any
+        return null as unknown as never
       }
 
       if (session.user) {

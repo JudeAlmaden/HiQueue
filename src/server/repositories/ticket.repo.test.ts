@@ -144,8 +144,8 @@ describe("Ticket Repository", () => {
 
   describe("getWaitingTicketsCount", () => {
     it("returns count of waiting tickets created before the given ticket", async () => {
-      const t1 = await createTicket({ queueId: testQueueId, serviceId: testServiceId })
-      const t2 = await createTicket({ queueId: testQueueId, serviceId: testServiceId })
+      await createTicket({ queueId: testQueueId, serviceId: testServiceId })
+      await createTicket({ queueId: testQueueId, serviceId: testServiceId })
       const t3 = await createTicket({ queueId: testQueueId, serviceId: testServiceId })
 
       // t3 should have 2 tickets ahead (t1 and t2)

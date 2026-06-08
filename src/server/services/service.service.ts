@@ -19,7 +19,7 @@ export async function createService(
   input: CreateServiceInput,
   userId: string,
   organizationId: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<unknown>> {
   try {
     const isAuthorized = await checkOwner(userId, organizationId)
     if (!isAuthorized) {
@@ -66,7 +66,7 @@ export async function createService(
     })
 
     return ok(service)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to create service:", error)
     return fail("Failed to create service. Please try again")
   }
@@ -79,7 +79,7 @@ export async function updateService(
   input: UpdateServiceInput,
   userId: string,
   organizationId: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<unknown>> {
   try {
     const isAuthorized = await checkOwner(userId, organizationId)
     if (!isAuthorized) {
@@ -118,7 +118,7 @@ export async function updateService(
     })
 
     return ok(updated)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to update service:", error)
     return fail("Failed to update service. Please try again")
   }
@@ -132,7 +132,7 @@ export async function setServiceActive(
   isActive: boolean,
   userId: string,
   organizationId: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<unknown>> {
   try {
     const role = await getOrganizationRole(userId, organizationId)
     const isAuthorized = canSetServiceActive(role, isActive)
@@ -151,7 +151,7 @@ export async function setServiceActive(
 
     const updated = await serviceRepo.updateService(id, { isActive })
     return ok(updated)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to update service status:", error)
     return fail("Failed to update service status. Please try again")
   }
@@ -188,7 +188,7 @@ export async function deleteService(
 
     await serviceRepo.deleteService(id)
     return ok(undefined)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to delete service:", error)
     return fail("Failed to delete service. Please try again")
   }

@@ -11,7 +11,7 @@ export async function createOrganization(input: CreateOrganizationInput, userId:
     const slug = input.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-') + '-' + Math.floor(Math.random() * 1000)
     const org = await orgRepo.createOrganization({ name: input.name, slug }, userId)
     return ok(org)
-  } catch (error: any) {
+  } catch {
     return fail("Failed to create organization")
   }
 }
@@ -28,7 +28,7 @@ export async function updateOrganization(input: UpdateOrganizationInput, userId:
     }
     const org = await orgRepo.updateOrganization(input.id, { name: input.name })
     return ok(org)
-  } catch (error: any) {
+  } catch {
     return fail("Failed to update organization")
   }
 }
@@ -45,7 +45,7 @@ export async function deleteOrganization(id: string, userId: string) {
     }
     await orgRepo.deleteOrganization(id)
     return ok(undefined)
-  } catch (error: any) {
+  } catch {
     return fail("Failed to delete organization")
   }
 }
@@ -54,7 +54,7 @@ export async function getUserOrganization(userId: string) {
   try {
     const org = await orgRepo.getUserOrganization(userId)
     return ok(org)
-  } catch (error: any) {
+  } catch {
     return fail("Failed to fetch organization")
   }
 }
@@ -63,7 +63,7 @@ export async function getUserOrganizationWithDetails(userId: string) {
   try {
     const org = await orgRepo.getUserOrganizationWithDetails(userId)
     return ok(org)
-  } catch (error: any) {
+  } catch {
     return fail("Failed to fetch organization")
   }
 }
@@ -87,7 +87,7 @@ export async function getOrganizationBySlug(slug: string) {
     const org = await orgRepo.findOrganizationBySlug(slug)
     if (!org) return fail("Organization not found")
     return ok(org)
-  } catch (error: any) {
+  } catch {
     return fail("Failed to fetch organization")
   }
 }
@@ -97,7 +97,7 @@ export async function getOrganizationBySlugWithDetails(slug: string) {
     const org = await orgRepo.findOrganizationBySlugWithDetails(slug)
     if (!org) return fail("Organization not found")
     return ok(org)
-  } catch (error: any) {
+  } catch {
     return fail("Failed to fetch organization")
   }
 }

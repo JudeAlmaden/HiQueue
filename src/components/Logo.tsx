@@ -1,4 +1,4 @@
-import { ReactNode } from "react"
+
 
 interface LogoProps {
   variant?: "icon-only" | "with-name" | "text-only"

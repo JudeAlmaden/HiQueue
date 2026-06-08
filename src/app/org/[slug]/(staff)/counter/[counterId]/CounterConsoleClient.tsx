@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect } from "react"
 import { parseCustomerName } from "@/lib/customer-utils"
@@ -12,8 +12,6 @@ import {
   User,
   Monitor,
   ChevronRight,
-  Wifi,
-  WifiOff,
   Search,
   Volume2
 } from "lucide-react"
@@ -79,7 +77,6 @@ export default function CounterConsoleClient({
   counter,
   initialTickets,
   orgSlug,
-  orgName,
 }: Props) {
   const toasts = useToast()
   
@@ -116,7 +113,7 @@ export default function CounterConsoleClient({
             setTickets(payload.tickets)
           }
           if (payload.counters) {
-            const thisCounter = payload.counters.find((c: any) => c.id === counter.id)
+            const thisCounter = payload.counters.find((c: { id: string; currentTicketId: string | null }) => c.id === counter.id)
             if (thisCounter) {
               setCurrentTicketId(thisCounter.currentTicketId)
             }
@@ -152,6 +149,7 @@ export default function CounterConsoleClient({
 
   useEffect(() => {
     if (!currentTicket || !currentTicket.calledAt) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setElapsedSeconds(0)
       return
     }
@@ -191,7 +189,7 @@ export default function CounterConsoleClient({
   const autoCallNext = async () => {
     const nextRes = await callNextTicketAction(counter.id, selectedServiceId ?? undefined)
     if (nextRes.success) {
-      toasts.success("Auto-called next ticket: " + nextRes.data.code)
+      toasts.success("Auto-called next ticket: " + (nextRes.data as { code: string }).code)
     } else {
       console.log("No waiting tickets to auto-call next:", nextRes.error)
     }
@@ -202,11 +200,11 @@ export default function CounterConsoleClient({
     try {
       const res = await callNextTicketAction(counter.id, selectedServiceId ?? undefined)
       if (res.success) {
-        toasts.success("Called ticket: " + res.data.code)
+        toasts.success("Called ticket: " + (res.data as { code: string }).code)
       } else {
         toasts.error(res.error || "No waiting tickets available")
       }
-    } catch (err) {
+    } catch {
       toasts.error("An unexpected error occurred")
     } finally {
       setActionLoading(false)
@@ -218,12 +216,12 @@ export default function CounterConsoleClient({
     try {
       const res = await callSpecificTicketAction(ticketId, counter.id)
       if (res.success) {
-        toasts.success("Called ticket: " + res.data.code)
+        toasts.success("Called ticket: " + (res.data as { code: string }).code)
         setActiveTab("upcoming")
       } else {
         toasts.error(res.error || "Failed to call ticket")
       }
-    } catch (err) {
+    } catch {
       toasts.error("An unexpected error occurred")
     } finally {
       setActionLoading(false)
@@ -239,7 +237,7 @@ export default function CounterConsoleClient({
       } else {
         toasts.error(res.error || "Failed to call ticket")
       }
-    } catch (err) {
+    } catch {
       toasts.error("An unexpected error occurred")
     } finally {
       setActionLoading(false)
@@ -256,7 +254,7 @@ export default function CounterConsoleClient({
       } else {
         toasts.error(res.error || "Failed to complete ticket")
       }
-    } catch (err) {
+    } catch {
       toasts.error("An unexpected error occurred")
     } finally {
       setActionLoading(false)
@@ -272,7 +270,7 @@ export default function CounterConsoleClient({
       } else {
         toasts.error(res.error || "Failed to hold ticket")
       }
-    } catch (err) {
+    } catch {
       toasts.error("An unexpected error occurred")
     } finally {
       setActionLoading(false)
@@ -284,11 +282,11 @@ export default function CounterConsoleClient({
     try {
       const res = await recallFromHoldAction(ticketId, counter.id)
       if (res.success) {
-        toasts.success("Resumed ticket: " + res.data.code)
+        toasts.success("Resumed ticket: " + (res.data as { code: string }).code)
       } else {
         toasts.error(res.error || "Failed to resume ticket")
       }
-    } catch (err) {
+    } catch {
       toasts.error("An unexpected error occurred")
     } finally {
       setActionLoading(false)
@@ -305,7 +303,7 @@ export default function CounterConsoleClient({
       } else {
         toasts.error(res.error || "Failed to mark as No-Show")
       }
-    } catch (err) {
+    } catch {
       toasts.error("An unexpected error occurred")
     } finally {
       setActionLoading(false)
@@ -323,7 +321,7 @@ export default function CounterConsoleClient({
       } else {
         toasts.error(res.error || "Failed to skip ticket")
       }
-    } catch (err) {
+    } catch {
       toasts.error("An unexpected error occurred")
     } finally {
       setActionLoading(false)
@@ -813,7 +811,7 @@ export default function CounterConsoleClient({
                     <div className="flex-1 flex flex-col items-center justify-center text-center py-12 text-on-surface-variant/50 space-y-2">
                       <CheckCircle className="h-8 w-8 opacity-45" />
                       <p className="text-sm font-semibold">No completed tickets</p>
-                      <p className="text-xs">Processed tickets for today's session will appear here.</p>
+                      <p className="text-xs">Processed tickets for today&apos;s session will appear here.</p>
                     </div>
                   )}
                 </div>

@@ -7,7 +7,6 @@ import { loginUser } from "@/server/actions/auth.action"
 import { useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { Logo } from "@/components/Logo"
 import { Globe, GitBranch, ArrowRight, Building2, Loader2 } from "lucide-react"
 

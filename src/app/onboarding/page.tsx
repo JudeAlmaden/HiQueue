@@ -24,7 +24,7 @@ export default function OnboardingPage() {
             Set up your workspace
           </h1>
           <p className="text-sm text-on-surface-variant max-w-sm">
-            Welcome to HiQueue! Since you're new here, let's create a workspace for your business.
+            Welcome to HiQueue! Since you&apos;re new here, let&apos;s create a workspace for your business.
           </p>
         </div>
 

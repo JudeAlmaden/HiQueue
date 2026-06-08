@@ -17,7 +17,7 @@ export function PortalCustomizationCard({ orgSlug, portalLoginUrl }: PortalCusto
           <CardTitle>Staff Portal</CardTitle>
         </div>
         <CardDescription>
-          Customize your staff portal's theme, branding, and appearance to match your organization's identity.
+          Customize your staff portal&apos;s theme, branding, and appearance to match your organization&apos;s identity.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

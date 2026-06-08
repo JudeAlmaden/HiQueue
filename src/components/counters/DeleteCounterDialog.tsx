@@ -42,7 +42,7 @@ export function DeleteCounterDialog({ counterId, counterName, queueId, organizat
       } else {
         setError(res.error)
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred. Please try again.")
     } finally {
       setIsLoading(false)
@@ -60,7 +60,7 @@ export function DeleteCounterDialog({ counterId, counterName, queueId, organizat
           <div>
             <h2 className="text-lg font-bold text-on-surface">Delete Counter?</h2>
             <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
-              Are you sure you want to delete counter <span className="font-semibold text-on-surface">"{counterName}"</span>?
+              Are you sure you want to delete counter <span className="font-semibold text-on-surface">&quot;{counterName}&quot;</span>?
             </p>
           </div>
         </div>

@@ -96,7 +96,7 @@ async function getCurrentSessionTicketId(
 export async function callNextTicketAction(
   counterId: string,
   serviceId?: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<unknown>> {
   try {
     const verification = await verifyCounterStaff(counterId)
     if (!verification.success) return fail(verification.error)
@@ -122,16 +122,16 @@ export async function callNextTicketAction(
     }
 
     return ok(updatedTicket)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to call next ticket:", error)
-    return fail(error.message || "Failed to call next ticket")
+    return fail(error instanceof Error ? error.message : "Failed to call next ticket")
   }
 }
 
 export async function callSpecificTicketAction(
   ticketId: string,
   counterId: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<unknown>> {
   try {
     const verification = await verifyCounterStaff(counterId)
     if (!verification.success) return fail(verification.error)
@@ -147,9 +147,9 @@ export async function callSpecificTicketAction(
     }
 
     return ok(updatedTicket)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to call ticket:", error)
-    return fail(error.message || "Failed to call ticket")
+    return fail(error instanceof Error ? error.message : "Failed to call ticket")
   }
 }
 
@@ -178,13 +178,13 @@ export async function announceCurrentTicketAction(counterId: string): Promise<Ac
     }
 
     return ok({ code: counter.currentTicket.code })
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to announce ticket:", error)
-    return fail(error.message || "Failed to announce ticket")
+    return fail(error instanceof Error ? error.message : "Failed to announce ticket")
   }
 }
 
-export async function completeCurrentTicketAction(counterId: string): Promise<ActionResult<any>> {
+export async function completeCurrentTicketAction(counterId: string): Promise<ActionResult<unknown>> {
   try {
     const verification = await verifyCounterStaff(counterId)
     if (!verification.success) return fail(verification.error)
@@ -203,13 +203,13 @@ export async function completeCurrentTicketAction(counterId: string): Promise<Ac
     }
 
     return ok(updatedTicket)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to complete ticket:", error)
-    return fail(error.message || "Failed to complete ticket")
+    return fail(error instanceof Error ? error.message : "Failed to complete ticket")
   }
 }
 
-export async function holdCurrentTicketAction(counterId: string): Promise<ActionResult<any>> {
+export async function holdCurrentTicketAction(counterId: string): Promise<ActionResult<unknown>> {
   try {
     const verification = await verifyCounterStaff(counterId)
     if (!verification.success) return fail(verification.error)
@@ -228,16 +228,16 @@ export async function holdCurrentTicketAction(counterId: string): Promise<Action
     }
 
     return ok(updatedTicket)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to hold ticket:", error)
-    return fail(error.message || "Failed to hold ticket")
+    return fail(error instanceof Error ? error.message : "Failed to hold ticket")
   }
 }
 
 export async function recallFromHoldAction(
   ticketId: string,
   counterId: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<unknown>> {
   try {
     const verification = await verifyCounterStaff(counterId)
     if (!verification.success) return fail(verification.error)
@@ -253,13 +253,13 @@ export async function recallFromHoldAction(
     }
 
     return ok(updatedTicket)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to recall ticket from hold:", error)
-    return fail(error.message || "Failed to recall ticket from hold")
+    return fail(error instanceof Error ? error.message : "Failed to recall ticket from hold")
   }
 }
 
-export async function noShowAction(counterId: string): Promise<ActionResult<any>> {
+export async function noShowAction(counterId: string): Promise<ActionResult<unknown>> {
   try {
     const verification = await verifyCounterStaff(counterId)
     if (!verification.success) return fail(verification.error)
@@ -278,16 +278,16 @@ export async function noShowAction(counterId: string): Promise<ActionResult<any>
     }
 
     return ok(updatedTicket)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to mark ticket as no-show:", error)
-    return fail(error.message || "Failed to mark ticket as no-show")
+    return fail(error instanceof Error ? error.message : "Failed to mark ticket as no-show")
   }
 }
 
 export async function skipTicketAction(
   ticketId: string,
   counterId: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<unknown>> {
   try {
     const verification = await verifyCounterStaff(counterId)
     if (!verification.success) return fail(verification.error)
@@ -303,8 +303,8 @@ export async function skipTicketAction(
     }
 
     return ok(updatedTicket)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to skip ticket:", error)
-    return fail(error.message || "Failed to skip ticket")
+    return fail(error instanceof Error ? error.message : "Failed to skip ticket")
   }
 }

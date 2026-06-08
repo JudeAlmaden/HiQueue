@@ -58,7 +58,7 @@ export async function updateQueueAction(formData: FormData) {
   try {
     if (themeStr) theme = JSON.parse(themeStr)
     if (layoutStr) layout = JSON.parse(layoutStr)
-  } catch (e) {
+  } catch {
     return fail("Invalid layout or theme format")
   }
 

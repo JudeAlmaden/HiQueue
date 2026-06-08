@@ -45,7 +45,7 @@ export function DeleteQueueDialog({ queueId, queueName, organizationId, orgSlug,
       } else {
         setError(res.error)
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred. Please try again.")
     } finally {
       setIsLoading(false)
@@ -63,7 +63,7 @@ export function DeleteQueueDialog({ queueId, queueName, organizationId, orgSlug,
           <div>
             <h2 className="text-lg font-bold text-on-surface">Delete Queue?</h2>
             <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
-              Are you sure you want to delete queue <span className="font-semibold text-on-surface">"{queueName}"</span>?
+              Are you sure you want to delete queue <span className="font-semibold text-on-surface">&quot;{queueName}&quot;</span>?
             </p>
           </div>
         </div>

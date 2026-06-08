@@ -23,7 +23,7 @@ async function verifyQueueInOrganization(id: string, organizationId: string): Pr
 export async function createQueue(
   input: CreateQueueInput,
   userId: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<unknown>> {
   try {
     const isAuthorized = await checkOwner(userId, input.organizationId)
     if (!isAuthorized) {
@@ -50,7 +50,7 @@ export async function createQueue(
     })
 
     return ok(queue)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to create queue:", error)
     return fail("Failed to create queue. Please try again")
   }
@@ -63,7 +63,7 @@ export async function updateQueue(
   input: UpdateQueueInput,
   userId: string,
   organizationId: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<unknown>> {
   try {
     const isAuthorized = await checkOwner(userId, organizationId)
     if (!isAuthorized) {
@@ -92,7 +92,7 @@ export async function updateQueue(
     })
 
     return ok(updated)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to update queue:", error)
     return fail("Failed to update queue. Please try again")
   }
@@ -106,7 +106,7 @@ export async function setQueueActive(
   isActive: boolean,
   userId: string,
   organizationId: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<unknown>> {
   try {
     const isAuthorized = await checkOwner(userId, organizationId)
     if (!isAuthorized) {
@@ -120,7 +120,7 @@ export async function setQueueActive(
 
     const updated = await queueRepo.updateQueue(id, { isActive })
     return ok(updated)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to update queue status:", error)
     return fail("Failed to update queue status. Please try again")
   }
@@ -153,7 +153,7 @@ export async function deleteQueue(
 
     await queueRepo.deleteQueue(id)
     return ok(undefined)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to delete queue:", error)
     return fail("Failed to delete queue. Please try again")
   }
@@ -166,7 +166,7 @@ export async function getOrganizationQueues(organizationId: string) {
   try {
     const queues = await queueRepo.getOrganizationQueues(organizationId)
     return ok(queues)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to fetch organization queues:", error)
     return fail("Failed to fetch organization queues")
   }
@@ -182,7 +182,7 @@ export async function getQueueById(id: string) {
       return fail("Queue not found")
     }
     return ok(queue)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to fetch queue details:", error)
     return fail("Failed to fetch queue details")
   }

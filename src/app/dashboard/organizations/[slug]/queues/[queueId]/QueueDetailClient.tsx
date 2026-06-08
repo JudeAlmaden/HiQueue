@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Edit, Trash2, Key, Info, ListOrdered, Loader2, Power, PowerOff } from "lucide-react"
+import { ArrowLeft, Edit, Key, Info, Loader2, Power, PowerOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/toast"
 import { setQueueActiveAction } from "@/server/actions/queue.action"
@@ -12,8 +12,24 @@ import { DeleteQueueDialog } from "@/components/queues/DeleteQueueDialog"
 import { ServiceList } from "@/components/services/ServiceList"
 import { CounterList } from "@/components/counters/CounterList"
 
+interface QueueData {
+  id: string
+  name: string
+  description: string | null
+  isActive: boolean
+  passcode: string | null
+  services: Array<{ id: string; name: string; prefix: string; avgDurationMinutes: number | null; isActive: boolean }>
+  counters: Array<{
+    id: string
+    name: string
+    isActive: boolean
+    services?: Array<{ id: string; name: string; prefix: string }>
+    assignedStaff?: Array<{ id: string; name: string | null; email: string | null; isActive: boolean }>
+  }>
+}
+
 interface Props {
-  queue: any
+  queue: QueueData
   currentUserRole: string
   organizationId: string
   orgSlug: string

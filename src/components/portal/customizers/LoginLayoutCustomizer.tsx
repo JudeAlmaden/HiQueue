@@ -89,6 +89,7 @@ export function LoginLayoutCustomizer({ previewOptionKey, activeControls, onCont
             />
             {activeControls?.splitLeftPanelBgImage && (
               <div className="rounded border border-border bg-muted/20 overflow-hidden h-20">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={activeControls.splitLeftPanelBgImage}
                   alt="Left panel preview"

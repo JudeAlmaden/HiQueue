@@ -54,7 +54,7 @@ export async function loginUser(
   }
 
   if (orgSlug) {
-    const membership = await db.organizationMembership.findUnique({
+    const membership = await db.organizationMembership.findFirst({
       where: { userId: user.id },
       include: { organization: { select: { slug: true } } },
     })

@@ -42,7 +42,7 @@ export function DeleteServiceDialog({ serviceId, serviceName, queueId, organizat
       } else {
         setError(res.error)
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred. Please try again.")
     } finally {
       setIsLoading(false)
@@ -60,7 +60,7 @@ export function DeleteServiceDialog({ serviceId, serviceName, queueId, organizat
           <div>
             <h2 className="text-lg font-bold text-on-surface">Delete Service?</h2>
             <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
-              Are you sure you want to delete service <span className="font-semibold text-on-surface">"{serviceName}"</span>?
+              Are you sure you want to delete service <span className="font-semibold text-on-surface">&quot;{serviceName}&quot;</span>?
             </p>
           </div>
         </div>

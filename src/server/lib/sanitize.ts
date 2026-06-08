@@ -173,9 +173,9 @@ export function containsXss(input: string): boolean {
 /**
  * Sanitize object by applying sanitization to all string values
  */
-export function sanitizeObject<T extends Record<string, any>>(
+export function sanitizeObject<T extends Record<string, unknown>>(
   obj: T,
-  sanitizers?: Partial<Record<keyof T, (value: any) => any>>
+  sanitizers?: Partial<Record<keyof T, (value: unknown) => unknown>>
 ): T {
   const result = { ...obj }
 
@@ -183,11 +183,11 @@ export function sanitizeObject<T extends Record<string, any>>(
     const value = result[key]
     
     if (sanitizers && sanitizers[key]) {
-      result[key] = sanitizers[key]!(value)
+      result[key] = sanitizers[key]!(value) as unknown as T[Extract<keyof T, string>]
     } else if (typeof value === 'string') {
-      result[key] = sanitizeString(value) as any
+      result[key] = sanitizeString(value) as unknown as T[Extract<keyof T, string>]
     } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      result[key] = sanitizeObject(value) as any
+      result[key] = sanitizeObject(value as Record<string, unknown>) as unknown as T[Extract<keyof T, string>]
     }
   }
 

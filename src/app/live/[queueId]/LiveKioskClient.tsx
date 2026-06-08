@@ -172,8 +172,16 @@ export function LiveKioskClient({
     }
   }, [queueId])
 
+  const handleReset = () => {
+    setCustomerName("")
+    setSelectedServiceId(null)
+    setCreatedTicket(null)
+    setScreen("TICKET")
+  }
+
   // Check persisted auth token on mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsHydrated(true)
     if (hasPasscode) {
       const persisted = localStorage.getItem(`kiosk_unlocked_${queueId}`)
@@ -190,6 +198,7 @@ export function LiveKioskClient({
   // Auto-reset countdown on SUCCESS
   useEffect(() => {
     if (screen !== "SUCCESS") return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCountdown(12)
     const timer = setInterval(() => {
       setCountdown((prev) => {
@@ -262,12 +271,6 @@ export function LiveKioskClient({
     }
   }
 
-  const handleReset = () => {
-    setCustomerName("")
-    setSelectedServiceId(null)
-    setCreatedTicket(null)
-    setScreen("TICKET")
-  }
 
   const handleLockKiosk = () => {
     localStorage.removeItem(`kiosk_unlocked_${queueId}`)
@@ -380,7 +383,7 @@ export function LiveKioskClient({
             <div className="space-y-1">
               <h1 className="text-xl font-extrabold text-on-surface">Your Ticket is Ready!</h1>
               <p className="text-xs text-on-surface-variant">
-                Please wait. We'll call your number shortly.
+                Please wait. We&apos;ll call your number shortly.
               </p>
             </div>
 

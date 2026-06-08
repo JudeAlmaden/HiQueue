@@ -14,7 +14,7 @@ async function checkAdminOrOwner(userId: string, organizationId: string): Promis
 export async function assignStaff(
   input: AssignStaffInput,
   userId: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<unknown>> {
   try {
     const counter = await db.counter.findUnique({
       where: { id: input.counterId },
@@ -38,7 +38,7 @@ export async function assignStaff(
 
     const updated = await assignmentRepo.assignStaffToCounter(input.userId, input.counterId)
     return ok(updated)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to assign staff:", error)
     return fail("Failed to assign staff. Please try again")
   }
@@ -50,7 +50,7 @@ export async function assignStaff(
 export async function unassignStaff(
   input: UnassignStaffInput,
   userId: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<unknown>> {
   try {
     const counter = await db.counter.findUnique({
       where: { id: input.counterId },
@@ -74,7 +74,7 @@ export async function unassignStaff(
 
     const updated = await assignmentRepo.unassignStaffFromCounter(input.userId, input.counterId)
     return ok(updated)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to unassign staff:", error)
     return fail("Failed to unassign staff. Please try again")
   }

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import Image from "next/image"
 import { Monitor, Clock, Users, Lock, Loader2, QrCode } from "lucide-react"
 import { verifyKioskPasscodeAction } from "@/server/actions/ticket.action"
 import { QRCodeSVG } from "qrcode.react"
@@ -73,7 +74,6 @@ export function LiveDisplayClient({
   queue,
   initialTickets,
   initialCounters,
-  orgSlug,
   hasPasscode,
   portalTheme,
 }: Props) {
@@ -425,7 +425,15 @@ export function LiveDisplayClient({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
             {logoUrl && (
-              <img src={logoUrl} alt="Logo" className="h-14 w-auto object-contain" />
+              <div className="relative h-14 w-32">
+                <Image
+                  src={logoUrl}
+                  alt="Logo"
+                  fill
+                  className="object-contain"
+                  unoptimized={logoUrl.startsWith("http")}
+                />
+              </div>
             )}
             <div>
               <h1 className="text-[28px] font-bold text-[#1a1c1a] leading-tight tracking-tight">{queue.organization.name}</h1>

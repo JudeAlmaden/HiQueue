@@ -40,7 +40,7 @@ export function DeleteMemberDialog({ memberId, memberName, organizationId, orgSl
       } else {
         setError(res.error)
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred. Please try again.")
     } finally {
       setIsLoading(false)
@@ -58,7 +58,7 @@ export function DeleteMemberDialog({ memberId, memberName, organizationId, orgSl
           <div>
             <h2 className="text-lg font-bold text-on-surface">Remove Member?</h2>
             <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
-              Are you sure you want to remove <span className="font-semibold text-on-surface">"{memberName}"</span> from this organization?
+              Are you sure you want to remove <span className="font-semibold text-on-surface">&quot;{memberName}&quot;</span> from this organization?
             </p>
           </div>
         </div>

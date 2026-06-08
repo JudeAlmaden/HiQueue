@@ -23,7 +23,7 @@ describe('RegisterPage', () => {
 
   it('should show spinner when form is submitted', async () => {
     // Mock registerUser to delay response
-    const mockRegisterUser = registerUser as any
+    const mockRegisterUser = vi.mocked(registerUser)
     mockRegisterUser.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ success: false, error: 'Test error' }), 100)))
 
     render(<RegisterPage />)
@@ -69,7 +69,7 @@ describe('RegisterPage', () => {
   })
 
   it('should stop spinner and show error when registration fails', async () => {
-    const mockRegisterUser = registerUser as any
+    const mockRegisterUser = vi.mocked(registerUser)
     mockRegisterUser.mockResolvedValue({ success: false, error: 'Email already exists' })
 
     render(<RegisterPage />)

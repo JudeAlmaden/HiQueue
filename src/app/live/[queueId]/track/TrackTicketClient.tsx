@@ -310,7 +310,7 @@ export function TrackTicketClient({ queueId, queueName, organizationName, portal
                   >
                     <Search className="h-8 w-8 text-primary" />
                   </div>
-                  <h2 className="text-2xl font-bold text-on-surface mb-2">Where's My Ticket?</h2>
+                  <h2 className="text-2xl font-bold text-on-surface mb-2">Where&apos;s My Ticket?</h2>
                   <p className="text-on-surface-variant text-sm">
                     Enter your ticket code to check your position in the queue
                   </p>
@@ -357,7 +357,7 @@ export function TrackTicketClient({ queueId, queueName, organizationName, portal
                           Ticket Not Found
                         </p>
                         <p className="text-xs opacity-90">
-                          We couldn't find a ticket with code <span className="font-mono font-bold">{searchCode}</span>. Please check your ticket code and try again.
+                          We couldn&apos;t find a ticket with code <span className="font-mono font-bold">{searchCode}</span>. Please check your ticket code and try again.
                         </p>
                       </div>
                     </div>

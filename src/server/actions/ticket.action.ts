@@ -30,11 +30,26 @@ export async function verifyKioskPasscodeAction(
   }
 }
 
+export interface CreateTicketResponse {
+  ticket: {
+    id: string
+    code: string
+    number: number
+    customerName?: string
+    status: string
+    createdAt: Date
+  }
+  waitCount: number
+  estimatedWaitTime: number
+  queueName: string
+  serviceName: string
+}
+
 export async function createTicketAction(input: {
   queueId: string
   serviceId: string
   customerName?: string | null
-}): Promise<ActionResult<any>> {
+}): Promise<ActionResult<CreateTicketResponse>> {
   const result = createTicketSchema.safeParse(input)
 
   if (!result.success) {
@@ -88,8 +103,9 @@ export async function createTicketAction(input: {
       queueName: queue.name,
       serviceName: service?.name || "",
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to create ticket:", error)
-    return fail(error.message || "Failed to create ticket")
+    const message = error instanceof Error ? error.message : "Failed to create ticket"
+    return fail(message)
   }
 }

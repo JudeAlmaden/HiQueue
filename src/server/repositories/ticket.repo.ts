@@ -1,5 +1,6 @@
 import { db } from "@/server/lib/db"
 import { getBusinessDayBounds } from "@/server/lib/business-day"
+import { Prisma } from "@prisma/client"
 
 /**
  * Get or create an open queue session for today.
@@ -181,7 +182,7 @@ export async function getQueueTickets(queueId: string, sessionId?: string) {
 export async function getNextWaitingTicket(queueId: string, serviceIds?: string[]) {
   const todaySession = await getOrCreateTodaySession(queueId)
   
-  const whereClause: any = {
+  const whereClause: Prisma.TicketWhereInput = {
     queueId,
     queueSessionId: todaySession.id,
     status: "waiting",

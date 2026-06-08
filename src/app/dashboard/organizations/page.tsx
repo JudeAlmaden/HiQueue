@@ -7,7 +7,7 @@ import { PortalCustomizationCard } from "@/components/portal/PortalCustomization
 
 export default async function WorkspaceSettingsPage() {
   const session = await auth()
-  const userId = session?.user?.id!
+  const userId = session?.user?.id ?? ""
 
   const res = await getUserOrganizationWithDetails(userId)
   const org = res.success ? res.data : null

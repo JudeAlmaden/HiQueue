@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
+import Image from "next/image"
 import type {
   OrgPortalContext,
   PortalTheme,
@@ -332,6 +333,7 @@ export function PortalCustomizer({ orgPortal, sampleQueueId }: PortalCustomizerP
     const params = new URLSearchParams(window.location.search)
     const tab = params.get("tab")
     if (tab === "theme" || tab === "branding" || tab === "layout") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab(tab as CustomizerTab)
     }
   }, [])
@@ -344,30 +346,42 @@ export function PortalCustomizer({ orgPortal, sampleQueueId }: PortalCustomizerP
     window.history.replaceState({}, "", url.toString())
   }
 
-  // Keyboard shortcuts for modal
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (layoutCustomizeSection) {
-      if (e.key === "Escape") {
-        setLayoutCustomizeSection(null)
-      } else if ((e.metaKey || e.ctrlKey) && e.key === "s") {
-        e.preventDefault()
-        if (hasChanges && !isSaving) {
-          handleSave()
-        }
-      }
-    }
-  }
+  const handleSave = useCallback(async () => {
+    setIsSaving(true)
+    try {
+      const [themeResult, brandingResult] = await Promise.all([
+        updatePortalTheme(orgPortal.id, theme),
+        updatePortalBranding(orgPortal.id, branding),
+      ])
 
-  // Attach keyboard listener
-  if (typeof window !== "undefined") {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { useEffect } = require("react")
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => {
-      window.addEventListener("keydown", handleKeyDown)
-      return () => window.removeEventListener("keydown", handleKeyDown)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [layoutCustomizeSection, hasChanges, isSaving])
+      if (themeResult.success && brandingResult.success) {
+        toast.success("Portal customization saved successfully!")
+        setHasChanges(false)
+        router.refresh()
+      } else {
+        const message = !themeResult.success
+          ? themeResult.error
+          : !brandingResult.success
+            ? brandingResult.error
+            : "Failed to save customization"
+        toast.error(message)
+      }
+    } catch (error) {
+      toast.error("An error occurred while saving")
+      console.error(error)
+    } finally {
+      setIsSaving(false)
+    }
+  }, [orgPortal.id, theme, branding, router])
+
+  const handleReset = () => {
+    setTheme({
+      mode: orgPortal.theme.mode ?? "light",
+      ...orgPortal.theme,
+    })
+    setBranding(orgPortal.branding)
+    setHasChanges(false)
+    toast.info("Changes reset to saved values")
   }
 
   const handleThemeChange = (newTheme: PortalTheme) => {
@@ -412,43 +426,25 @@ export function PortalCustomizer({ orgPortal, sampleQueueId }: PortalCustomizerP
     setHasChanges(true)
   }
 
-  const handleSave = async () => {
-    setIsSaving(true)
-    try {
-      const [themeResult, brandingResult] = await Promise.all([
-        updatePortalTheme(orgPortal.id, theme),
-        updatePortalBranding(orgPortal.id, branding),
-      ])
-
-      if (themeResult.success && brandingResult.success) {
-        toast.success("Portal customization saved successfully!")
-        setHasChanges(false)
-        router.refresh()
-      } else {
-        const message = !themeResult.success
-          ? themeResult.error
-          : !brandingResult.success
-            ? brandingResult.error
-            : "Failed to save customization"
-        toast.error(message)
+  // Keyboard shortcuts for modal
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (layoutCustomizeSection) {
+      if (e.key === "Escape") {
+        setLayoutCustomizeSection(null)
+      } else if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault()
+        if (hasChanges && !isSaving) {
+          handleSave()
+        }
       }
-    } catch (error) {
-      toast.error("An error occurred while saving")
-      console.error(error)
-    } finally {
-      setIsSaving(false)
     }
-  }
+  }, [layoutCustomizeSection, hasChanges, isSaving, handleSave])
 
-  const handleReset = () => {
-    setTheme({
-      mode: orgPortal.theme.mode ?? "light",
-      ...orgPortal.theme,
-    })
-    setBranding(orgPortal.branding)
-    setHasChanges(false)
-    toast.info("Changes reset to saved values")
-  }
+  // Attach keyboard listener
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [layoutCustomizeSection, hasChanges, isSaving, handleKeyDown])
 
   const isCustomTheme = (theme.themeClass ?? "") === "theme-custom"
   const layoutSections = [
@@ -676,8 +672,15 @@ export function PortalCustomizer({ orgPortal, sampleQueueId }: PortalCustomizerP
                   <div className="mt-3 flex items-center gap-3 rounded-xl border border-border bg-background p-4">
                     <div className="h-12 w-12 rounded-xl border border-border bg-muted/30 flex items-center justify-center overflow-hidden">
                       {branding.logoUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={branding.logoUrl} alt="Logo preview" className="h-full w-full object-contain" />
+                        <div className="relative h-full w-full">
+                          <Image
+                            src={branding.logoUrl}
+                            alt="Logo preview"
+                            fill
+                            className="object-contain"
+                            unoptimized={branding.logoUrl.startsWith("http")}
+                          />
+                        </div>
                       ) : (
                         <div className="text-[10px] font-semibold text-muted-foreground">No logo</div>
                       )}
@@ -690,7 +693,7 @@ export function PortalCustomizer({ orgPortal, sampleQueueId }: PortalCustomizerP
                     </div>
                   </div>
                   <div className="mt-3 text-xs text-on-surface-variant">
-                    Logo is loaded from the URL you provide. Make sure it's publicly accessible.
+                    Logo is loaded from the URL you provide. Make sure it&apos;s publicly accessible.
                   </div>
                 </div>
               </div>
@@ -879,7 +882,11 @@ export function PortalCustomizer({ orgPortal, sampleQueueId }: PortalCustomizerP
                       previewOptionKey={previewOption?.key}
                       activeControls={activeControls}
                       onControlChange={(key, value) =>
-                        handleLayoutControlChange(activeLayoutSection.key, key as any, value)
+                        handleLayoutControlChange(
+                          activeLayoutSection.key,
+                          key as "splitLeftPanelBgImage" | "splitRightPanelBg" | "pageBg" | "pageBgImage" | "typographyScale" | "fontColor" | "sharpness",
+                          value
+                        )
                       }
                     />
                     {activeLayoutSection.key === "login" && previewOption?.key === "split" && (
@@ -888,7 +895,11 @@ export function PortalCustomizer({ orgPortal, sampleQueueId }: PortalCustomizerP
                           previewOptionKey={previewOption?.key}
                           activeControls={activeControls}
                           onControlChange={(key, value) =>
-                            handleLayoutControlChange(activeLayoutSection.key, key as any, value)
+                            handleLayoutControlChange(
+                              activeLayoutSection.key,
+                              key as "splitLeftPanelBgImage" | "splitRightPanelBg" | "pageBg" | "pageBgImage" | "typographyScale" | "fontColor" | "sharpness",
+                              value
+                            )
                           }
                         />
                       </div>

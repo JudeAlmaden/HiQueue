@@ -12,7 +12,9 @@ interface Props {
 export default async function StaffManagementPage({ params }: Props) {
   const { slug } = await params
   const session = await auth()
-  const userId = session?.user?.id!
+  const userId = session?.user?.id
+
+  if (!userId) notFound()
 
   const org = await getOrgPortalBySlug(slug)
   if (!org) notFound()

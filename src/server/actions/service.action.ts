@@ -27,7 +27,7 @@ export async function createServiceAction(formData: FormData) {
   const result = createServiceSchema.safeParse({
     name: formData.get("name"),
     prefix: formData.get("prefix"),
-    avgDurationMinutes: isNaN(avgDurationMinutes as any) ? undefined : avgDurationMinutes,
+    avgDurationMinutes: typeof avgDurationMinutes !== "number" || isNaN(avgDurationMinutes) ? undefined : avgDurationMinutes,
     queueId,
   })
 
@@ -61,7 +61,7 @@ export async function updateServiceAction(formData: FormData) {
     id: formData.get("id"),
     name: formData.get("name") || undefined,
     prefix: formData.get("prefix") || undefined,
-    avgDurationMinutes: isNaN(avgDurationMinutes as any) ? undefined : avgDurationMinutes,
+    avgDurationMinutes: avgDurationMinutes === undefined || isNaN(avgDurationMinutes) ? undefined : avgDurationMinutes,
   })
 
   if (!result.success) {

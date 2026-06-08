@@ -1,8 +1,6 @@
 "use client"
 
 import { useCallback, useRef, useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { toast } from "sonner"
 import { ChevronDown, ChevronUp } from "lucide-react"
 
 interface LayoutDesignControlsProps {
@@ -231,6 +229,7 @@ export function LayoutDesignControls({
             />
             {activeControls?.pageBgImage && (
               <div className="rounded border border-border bg-muted/20 overflow-hidden h-20">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={activeControls.pageBgImage}
                   alt="Background preview"

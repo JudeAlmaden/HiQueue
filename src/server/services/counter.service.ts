@@ -32,7 +32,7 @@ export async function createCounter(
   input: CreateCounterInput,
   userId: string,
   organizationId: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<unknown>> {
   try {
     const isAuthorized = await checkOwner(userId, organizationId)
     if (!isAuthorized) {
@@ -75,7 +75,7 @@ export async function createCounter(
     })
 
     return ok(counter)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to create counter:", error)
     return fail("Failed to create counter. Please try again")
   }
@@ -88,7 +88,7 @@ export async function updateCounter(
   input: UpdateCounterInput,
   userId: string,
   organizationId: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<unknown>> {
   try {
     const isAuthorized = await checkOwner(userId, organizationId)
     if (!isAuthorized) {
@@ -121,7 +121,7 @@ export async function updateCounter(
     })
 
     return ok(updated)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to update counter:", error)
     return fail("Failed to update counter. Please try again")
   }
@@ -158,7 +158,7 @@ export async function deleteCounter(
 
     await counterRepo.deleteCounter(id)
     return ok(undefined)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to delete counter:", error)
     return fail("Failed to delete counter. Please try again")
   }

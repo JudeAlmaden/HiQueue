@@ -49,7 +49,7 @@ export function CreateCounterForm({ queueId, services, organizationId, orgSlug, 
       } else {
         setError(res.error)
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred. Please try again.")
     } finally {
       setIsLoading(false)

@@ -53,7 +53,6 @@ describe("QueueService", () => {
         layout: "{}",
         isActive: true,
         createdAt: new Date(),
-        updatedAt: new Date(),
       })
 
       const result = await queueService.createQueue(validInput, mockUserId)
@@ -99,7 +98,6 @@ describe("QueueService", () => {
           layout: "{}",
           isActive: true,
           createdAt: new Date(),
-          updatedAt: new Date(),
         },
       ])
 
@@ -133,7 +131,6 @@ describe("QueueService", () => {
         layout: "{}",
         isActive: true,
         createdAt: new Date(),
-        updatedAt: new Date(),
       })
 
       const result = await queueService.deleteQueue(mockQueueId, mockUserId, mockOrgId)

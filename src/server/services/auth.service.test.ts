@@ -56,8 +56,8 @@ describe("auth.service", () => {
   describe("registerUser", () => {
     it("registers a new workspace owner and redirects to /login", async () => {
       vi.mocked(userRepo.findUserByEmail).mockResolvedValue(null)
-      vi.mocked(bcrypt.hash as any).mockResolvedValue("hashed")
-      vi.mocked(userRepo.createUser).mockResolvedValue({ id: "u-1" } as any)
+      vi.mocked(bcrypt.hash).mockImplementation(() => Promise.resolve("hashed"))
+      vi.mocked(userRepo.createUser).mockResolvedValue({ id: "u-1" } as unknown as Awaited<ReturnType<typeof userRepo.createUser>>)
 
       await authService.registerUser({
         name: "Admin",
@@ -70,7 +70,7 @@ describe("auth.service", () => {
     })
 
     it("returns an error when the user already exists", async () => {
-      vi.mocked(userRepo.findUserByEmail).mockResolvedValue({ id: "u-1" } as any)
+      vi.mocked(userRepo.findUserByEmail).mockResolvedValue({ id: "u-1" } as unknown as Awaited<ReturnType<typeof userRepo.findUserByEmail>>)
 
       const result = await authService.registerUser({
         name: "Admin",
@@ -96,8 +96,8 @@ describe("auth.service", () => {
         email: "admin@example.com",
         password: "hashed",
         createdById: null,
-      } as any)
-      vi.mocked(bcrypt.compare as any).mockResolvedValue(true)
+      } as unknown as Awaited<ReturnType<typeof userRepo.findUserByEmail>>)
+      vi.mocked(bcrypt.compare).mockImplementation(() => Promise.resolve(true))
       vi.mocked(accountAccess.isWorkspaceOwner).mockReturnValue(true)
       vi.mocked(signIn).mockResolvedValue(undefined)
 
@@ -119,8 +119,8 @@ describe("auth.service", () => {
         email: "admin@example.com",
         password: "hashed",
         createdById: null,
-      } as any)
-      vi.mocked(bcrypt.compare as any).mockResolvedValue(false)
+      } as unknown as Awaited<ReturnType<typeof userRepo.findUserByEmail>>)
+      vi.mocked(bcrypt.compare).mockImplementation(() => Promise.resolve(false))
 
       const result = await authService.loginUser(baseLogin, { orgSlug: null })
 
@@ -140,14 +140,14 @@ describe("auth.service", () => {
         email: "staff@example.com",
         password: "hashed",
         createdById: "admin-u",
-      } as any)
-      vi.mocked(bcrypt.compare as any).mockResolvedValue(true)
+      } as unknown as Awaited<ReturnType<typeof userRepo.findUserByEmail>>)
+      vi.mocked(bcrypt.compare).mockImplementation(() => Promise.resolve(true))
       vi.mocked(db.organizationMembership.findUnique).mockResolvedValue({
         id: "m-1",
         userId: "u-2",
         organizationId: "org-1",
         organization: { slug: orgSlug },
-      } as any)
+      } as unknown as Awaited<ReturnType<typeof db.organizationMembership.findUnique>>)
       vi.mocked(signIn).mockResolvedValue(undefined)
 
       await authService.loginUser(
@@ -171,8 +171,8 @@ describe("auth.service", () => {
         email: "staff@example.com",
         password: "hashed",
         createdById: "admin-u",
-      } as any)
-      vi.mocked(bcrypt.compare as any).mockResolvedValue(true)
+      } as unknown as Awaited<ReturnType<typeof userRepo.findUserByEmail>>)
+      vi.mocked(bcrypt.compare).mockImplementation(() => Promise.resolve(true))
       vi.mocked(db.organizationMembership.findUnique).mockResolvedValue(null)
 
       const result = await authService.loginUser(

@@ -87,7 +87,7 @@ export async function createMember(
     )
 
     return ok({ id: user.id, name: user.name || "", email: user.email })
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to create member:", error)
     return fail("Failed to create member. Please try again")
   }
@@ -154,7 +154,7 @@ export async function updateMember(
     }
 
     return ok(undefined)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to update member:", error)
     return fail("Failed to update member. Please try again")
   }
@@ -230,7 +230,7 @@ export async function deleteMember(
     await memberRepo.softDeleteMember(input.id, input.organizationId)
 
     return ok(undefined)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to delete member:", error)
     return fail("Failed to delete member. Please try again")
   }
@@ -245,7 +245,7 @@ export async function getOrganizationMembers(organizationId: string) {
   try {
     const members = await memberRepo.getOrganizationMembers(organizationId)
     return ok(members)
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to fetch organization members:", error)
     return fail("Failed to fetch organization members")
   }

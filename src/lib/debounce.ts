@@ -4,7 +4,7 @@ import React from "react"
  * Creates a debounced version of a function that delays execution
  * until after the specified wait time has elapsed without new calls
  */
-export function debounce<T extends (...args: any[]) => void>(
+export function debounce<T extends (...args: unknown[]) => void>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -26,7 +26,7 @@ export function debounce<T extends (...args: any[]) => void>(
 /**
  * Hook version of debounce that automatically cleans up on unmount
  */
-export function useDebounce<T extends (...args: any[]) => void>(
+export function useDebounce<T extends (...args: unknown[]) => void>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {

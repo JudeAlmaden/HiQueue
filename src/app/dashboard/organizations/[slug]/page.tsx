@@ -6,8 +6,6 @@ import {
   Activity,
   ArrowRight,
   Calendar,
-  CheckCircle2,
-  Clock,
   Crown,
   ExternalLink,
   ListOrdered,
@@ -61,12 +59,7 @@ export default async function OrgDetailPage({
   const ownerMembership = org.memberships.find((membership) => membership.role === "owner")
   const visibleMembers = org.memberships.slice(0, 4)
   const readyQueues = org.queues.filter((queue) => queue.counters.length > 0).length
-  const setupItems = [
-    { label: "Workspace created", complete: true },
-    { label: "Team invited", complete: memberCount > 1 },
-    { label: "Queue configured", complete: queueCount > 0 },
-    { label: "Counters connected", complete: counterCount > 0 },
-  ]
+
 
   return (
     <div className="space-y-6">

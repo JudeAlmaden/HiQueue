@@ -59,7 +59,7 @@ describe("Member Validators", () => {
     })
 
     it("should reject owner role", () => {
-      const input = { ...validData, role: "owner" as any }
+      const input = { ...validData, role: "owner" as unknown as "staff" }
       const result = createMemberSchema.safeParse(input)
       expect(result.success).toBe(false)
     })

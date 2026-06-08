@@ -33,7 +33,7 @@ export interface ApiContext {
   headers: Headers
 }
 
-export type ApiHandler<T = any> = (
+export type ApiHandler<T = unknown> = (
   request: NextRequest,
   context: ApiContext
 ) => Promise<NextResponse<T>>
@@ -41,7 +41,7 @@ export type ApiHandler<T = any> = (
 /**
  * Wrap an API handler with security middleware
  */
-export function withApiHandler<T = any>(
+export function withApiHandler<T = unknown>(
   handler: ApiHandler<T>,
   config: ApiHandlerConfig = {}
 ): (request: NextRequest) => Promise<NextResponse> {
@@ -166,7 +166,7 @@ export function withApiHandler<T = any>(
 /**
  * Create a JSON response with proper headers
  */
-export function jsonResponse<T = any>(
+export function jsonResponse<T = unknown>(
   data: T,
   init?: ResponseInit
 ): NextResponse<T> {
@@ -185,7 +185,7 @@ export function jsonResponse<T = any>(
 export function errorResponse(
   message: string,
   status: number = 400,
-  details?: Record<string, any>
+  details?: Record<string, unknown>
 ): NextResponse {
   return NextResponse.json(
     {
@@ -199,7 +199,7 @@ export function errorResponse(
 /**
  * Create a success response
  */
-export function successResponse<T = any>(
+export function successResponse<T = unknown>(
   data: T,
   message?: string
 ): NextResponse {

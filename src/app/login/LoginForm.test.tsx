@@ -24,14 +24,14 @@ vi.mock('@/components/Logo', () => ({
 describe('LoginForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(useSearchParams as any).mockReturnValue({
+    vi.mocked(useSearchParams).mockReturnValue({
       get: vi.fn().mockReturnValue(null),
-    })
+    } as unknown as ReturnType<typeof useSearchParams>)
   })
 
   it('should show spinner when form is submitted', async () => {
     // Mock loginUser to delay response
-    const mockLoginUser = loginUser as any
+    const mockLoginUser = vi.mocked(loginUser)
     mockLoginUser.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ success: false, error: 'Test error' }), 100)))
 
     render(<LoginForm />)
@@ -73,7 +73,7 @@ describe('LoginForm', () => {
   })
 
   it('should stop spinner and show error when login fails', async () => {
-    const mockLoginUser = loginUser as any
+    const mockLoginUser = vi.mocked(loginUser)
     mockLoginUser.mockResolvedValue({ success: false, error: 'Invalid credentials' })
 
     render(<LoginForm />)

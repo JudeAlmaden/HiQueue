@@ -60,8 +60,8 @@ interface Props {
 
 export function MembersManager({ memberships, currentUserId, currentUserRole, organizationId, orgSlug, layout = "grid" }: Props & { layout?: "grid" | "sidebar" }) {
   const [isAddOpen, setIsAddOpen] = useState(false)
-  const [editingMember, setEditingMember] = useState<any | null>(null)
-  const [deletingMember, setDeletingMember] = useState<any | null>(null)
+  const [editingMember, setEditingMember] = useState<{ id: string; name: string | null; email: string | null; role: string } | null>(null)
+  const [deletingMember, setDeletingMember] = useState<UserDetail | null>(null)
 
   const isAllowedToManage = currentUserRole === "owner" || currentUserRole === "admin"
   const roleCounts = memberships.reduce<Record<string, number>>((counts, member) => {
