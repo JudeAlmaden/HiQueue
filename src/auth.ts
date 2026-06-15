@@ -14,6 +14,8 @@ function normalizeEmail(email: string) {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(db),
+  // Allow automatic linking of OAuth accounts to existing users with same email
+  allowDangerousEmailAccountLinking: true,
   providers: [
     ...authConfig.providers,
     Credentials({
@@ -124,30 +126,109 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user }: { token: JWT; user?: User }) {
+    async signIn({ user, account, profile }) {
+      // Allow OAuth sign-in (Google) with automatic account linking
+      if (account?.provider === "google") {
+        if (!profile?.email) return false
+
+        const email = profile.email.toLowerCase()
+
+        // Check if user already exists with this email
+        const existingUser = await db.user.findUnique({
+          where: { email },
+          select: { id: true, isActive: true, deletedAt: true },
+        })
+
+        if (existingUser) {
+          // Block inactive/deleted users
+          if (!existingUser.isActive || existingUser.deletedAt) return false
+
+          // Check if Google account is already linked
+          const existingAccount = await db.account.findFirst({
+            where: {
+              userId: existingUser.id,
+              provider: "google",
+            },
+          })
+
+          // If no linked Google account, link it now
+          if (!existingAccount) {
+            await db.account.create({
+              data: {
+                userId: existingUser.id,
+                type: account.type,
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+                access_token: account.access_token as string | undefined,
+                refresh_token: account.refresh_token as string | undefined,
+                expires_at: account.expires_at as number | undefined,
+                token_type: account.token_type as string | undefined,
+                scope: account.scope as string | undefined,
+                id_token: account.id_token as string | undefined,
+              },
+            })
+
+            // Update user profile picture from Google if not set
+            if (profile.image || profile.picture) {
+              await db.user.update({
+                where: { id: existingUser.id },
+                data: {
+                  image: (profile.image ?? profile.picture) as string,
+                  emailVerified: new Date(), // Google email is verified
+                },
+              })
+            }
+
+            // Set the user id so the jwt callback can find them
+            user.id = existingUser.id
+          }
+
+          return true
+        }
+
+        // New user — adapter will create them automatically
+        return true
+      }
+      // Credentials provider handles its own validation
+      return true
+    },
+    async jwt({ token, user, account }: { token: JWT; user?: User; account?: { provider?: string } | null }) {
       if (user?.id) {
         token.id = user.id
-        const userType = user.userType || "owner"
-        token.userType = userType
+        token.userType = account?.provider === "google" ? "owner" : (user.userType || "owner")
         token.orgSlug = user.orgSlug ?? null
         token.role = user.role ?? null
-        token.isWorkspaceOwner = userType === "owner"
+        token.isWorkspaceOwner = true
 
-        if (userType === "owner") {
+        // For OAuth users, fetch role/orgSlug from DB since they aren't on the user object
+        if (account?.provider === "google") {
           const dbUser = await db.user.findUnique({
             where: { id: user.id },
-            select: { isActive: true, deletedAt: true },
+            select: { role: true, organization: { select: { slug: true } }, isActive: true, deletedAt: true },
           })
           if (!dbUser || !dbUser.isActive || dbUser.deletedAt) {
             return null as unknown as never
           }
+          token.role = dbUser.role
+          token.orgSlug = dbUser.organization?.slug ?? null
         } else {
-          const dbStaff = await db.staffUser.findUnique({
-            where: { id: user.id },
-            select: { isActive: true, deletedAt: true },
-          })
-          if (!dbStaff || !dbStaff.isActive || dbStaff.deletedAt) {
-            return null as unknown as never
+          // Credentials flow — validate as before
+          if (token.userType === "owner") {
+            const dbUser = await db.user.findUnique({
+              where: { id: user.id },
+              select: { isActive: true, deletedAt: true },
+            })
+            if (!dbUser || !dbUser.isActive || dbUser.deletedAt) {
+              return null as unknown as never
+            }
+          } else {
+            const dbStaff = await db.staffUser.findUnique({
+              where: { id: user.id },
+              select: { isActive: true, deletedAt: true },
+            })
+            if (!dbStaff || !dbStaff.isActive || dbStaff.deletedAt) {
+              return null as unknown as never
+            }
           }
         }
       } else if (token.id) {

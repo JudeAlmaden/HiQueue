@@ -35,7 +35,18 @@ export default async function Home() {
       </header>
 
       {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center text-center px-6 py-24 gap-6 max-w-3xl mx-auto w-full">
+      <div className="relative flex-1">
+        {/* Full-width background image */}
+        <div
+          className="absolute inset-0 -z-10 opacity-15"
+          style={{
+            backgroundImage: "url('/images/hero-bg.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+          }}
+        />
+        <main className="flex flex-col items-center justify-center text-center px-6 py-24 gap-6 max-w-3xl mx-auto w-full h-full">
         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-primary text-primary-foreground">
           ✦ Queue management, simplified
         </span>
@@ -71,6 +82,7 @@ export default async function Home() {
           )}
         </div>
       </main>
+      </div>
 
       {/* Features */}
       <section className="border-t border-border px-6 py-16">

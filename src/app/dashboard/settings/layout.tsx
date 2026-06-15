@@ -2,12 +2,13 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { User, Bell, Shield } from "lucide-react"
+import { User, Shield, Link2, AlertTriangle } from "lucide-react"
 
 const settingsNav = [
   { name: "Profile", href: "/dashboard/settings/profile", icon: User },
-  { name: "Notifications", href: "/dashboard/settings/notifications", icon: Bell },
   { name: "Security", href: "/dashboard/settings/security", icon: Shield },
+  { name: "Accounts", href: "/dashboard/settings/accounts", icon: Link2 },
+  { name: "Danger Zone", href: "/dashboard/settings/danger", icon: AlertTriangle },
 ]
 
 function isTabActive(pathname: string, href: string) {
