@@ -14,8 +14,6 @@ function normalizeEmail(email: string) {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(db),
-  // Allow automatic linking of OAuth accounts to existing users with same email
-  allowDangerousEmailAccountLinking: true,
   providers: [
     ...authConfig.providers,
     Credentials({
