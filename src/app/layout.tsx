@@ -16,9 +16,59 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://hi-queue.vercel.app";
+
 export const metadata: Metadata = {
-  title: "HiQueue - Dynamic Queue Management",
-  description: "Dynamic queue management system",
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: "HiQueue - Queue Management System for Walk-In Businesses",
+    template: "%s | HiQueue",
+  },
+  description:
+    "HiQueue helps businesses manage walk-in queues, issue numbered tickets, and call customers in order. Free queue management for clinics, banks, government offices, and service desks.",
+  keywords: [
+    "queue management system",
+    "queuing system",
+    "ticket system",
+    "walk-in queue",
+    "customer queue",
+    "queue display",
+    "service desk queue",
+    "digital queue",
+    "queue number system",
+    "waiting list management",
+  ],
+  authors: [{ name: "HiQueue" }],
+  creator: "HiQueue",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: baseUrl,
+    siteName: "HiQueue",
+    title: "HiQueue - Queue Management System for Walk-In Businesses",
+    description:
+      "Manage walk-in queues, issue numbered tickets, and call customers in order. Free and simple queue management.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "HiQueue - Queue Management System",
+    description:
+      "Manage walk-in queues, issue tickets, and call customers. Free queue management for any business.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    google: "google56d604de296f455d",
+  },
 };
 
 export default function RootLayout({
@@ -32,9 +82,7 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <Toaster>
-          {children}
-        </Toaster>
+        <Toaster>{children}</Toaster>
         <Sonner />
         <SpeedInsights />
       </body>
