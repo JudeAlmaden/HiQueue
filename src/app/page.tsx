@@ -38,7 +38,7 @@ export default async function Home() {
       <div className="relative flex-1">
         {/* Full-width background image */}
         <div
-          className="absolute inset-0 -z-10 opacity-15"
+          className="absolute inset-0 -z-10 opacity-30"
           style={{
             backgroundImage: "url('/images/hero-bg.png')",
             backgroundSize: "cover",
