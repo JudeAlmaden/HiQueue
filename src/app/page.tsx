@@ -37,14 +37,11 @@ export default async function Home() {
       {/* Hero */}
       <div className="relative flex-1 overflow-hidden">
         {/* Full-width background image */}
-        <div
-          className="absolute inset-0 z-0 opacity-30"
-          style={{
-            backgroundImage: "url('/images/hero-bg.png')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-          }}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/hero-bg.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-30 pointer-events-none"
         />
         <main className="relative z-10 flex flex-col items-center justify-center text-center px-6 py-24 gap-6 max-w-3xl mx-auto w-full h-full">
         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-primary text-primary-foreground">
