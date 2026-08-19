@@ -35,17 +35,26 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     style: React.CSSProperties
   }>({ className: "", style: {} })
 
+  const activeThemeRef = React.useRef<{
+    className: string
+    style: React.CSSProperties
+  }>({ className: "", style: {} })
+
   React.useEffect(() => {
     if (typeof window === "undefined") return
 
     const updateThemeFromDOM = () => {
       const portalEl = document.querySelector("[data-portal-org]")
+      let newClassName = ""
+      let newStyle: React.CSSProperties = {}
+
       if (portalEl) {
         // Extract theme classes starting with theme- or equal to dark
         const classes = Array.from(portalEl.classList).filter(
           (cls) => cls.startsWith("theme-") || cls === "dark"
         )
-        
+        newClassName = classes.join(" ")
+
         // Extract CSS variables starting with -- from style attribute
         const styleObj: Record<string, string> = {}
         const styleAttr = portalEl.getAttribute("style")
@@ -61,14 +70,21 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             }
           })
         }
-
-        setActiveTheme({
-          className: classes.join(" "),
-          style: styleObj,
-        })
-      } else {
-        setActiveTheme({ className: "", style: {} })
+        newStyle = styleObj
       }
+
+      // Only update state if values actually changed — prevents infinite
+      // MutationObserver → setState → re-render → MutationObserver loop
+      const prev = activeThemeRef.current
+      if (
+        newClassName === prev.className &&
+        JSON.stringify(newStyle) === JSON.stringify(prev.style)
+      ) {
+        return
+      }
+
+      activeThemeRef.current = { className: newClassName, style: newStyle }
+      setActiveTheme({ className: newClassName, style: newStyle })
     }
 
     // Run initially to capture mounted state

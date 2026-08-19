@@ -20,3 +20,5 @@ do not reformat the code.
 do not touch files that are not related to the task you are working on.
 
 use proper commit messages, follow conventional commits.
+
+do not create or update walkthrough artifacts unless explicitly requested by the user.

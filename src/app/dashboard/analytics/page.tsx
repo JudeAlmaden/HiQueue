@@ -1,7 +1,8 @@
-import Link from "next/link"
 import { redirect } from "next/navigation"
 import { BarChart3, Clock, ListOrdered, Ticket, Timer, Users } from "lucide-react"
 import { auth } from "@/auth"
+import { AnalyticsFilterModal } from "@/components/dashboard/AnalyticsFilterModal"
+import { HourlyVolumeChart } from "@/components/dashboard/HourlyVolumeChart"
 import { StatCard } from "@/components/dashboard/StatCard"
 import { StatusBreakdown } from "@/components/dashboard/StatusBreakdown"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,7 +13,15 @@ import {
 } from "@/server/services/analytics.service"
 
 interface AnalyticsPageProps {
-  searchParams: Promise<{ range?: string | string[] }>
+  searchParams: Promise<{
+    range?: string | string[]
+    dates?: string | string[]
+    date?: string | string[]
+    from?: string | string[]
+    to?: string | string[]
+    workingDays?: string | string[]
+    daysOfWeek?: string | string[]
+  }>
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -44,39 +53,62 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
   if (!userId) redirect("/login")
 
   const params = await searchParams
+  const datesStr = Array.isArray(params.dates) ? params.dates.join(",") : params.dates
+  const fromStr = Array.isArray(params.from)
+    ? params.from[0]
+    : params.from ?? (Array.isArray(params.date) ? params.date[0] : params.date)
+  const toStr = Array.isArray(params.to) ? params.to[0] : params.to
+  const daysOfWeekStr = Array.isArray(params.daysOfWeek) ? params.daysOfWeek.join(",") : params.daysOfWeek
   const range = parseAnalyticsRange(params.range)
-  const analytics = await getWorkspaceAnalytics(userId, range)
+  const workingDaysOnly =
+    params.workingDays === "true" ||
+    (Array.isArray(params.workingDays) && params.workingDays[0] === "true")
+
+  const analytics = await getWorkspaceAnalytics(
+    userId,
+    range,
+    datesStr,
+    fromStr,
+    toStr,
+    workingDaysOnly,
+    daysOfWeekStr
+  )
 
   if (!analytics) redirect("/onboarding")
 
+  const activeRangeText = analytics.dateLabel
+    ? analytics.dateLabel
+    : analytics.range === "today"
+    ? "Today"
+    : analytics.range === "all"
+    ? "All time"
+    : `Last ${analytics.range}`
+
   return (
     <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Analytics</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Queue performance and staff throughput for{" "}
-            <span className="font-medium text-foreground">{analytics.organization.name}</span>.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2 rounded-xl bg-surface-low p-1 ring-1 ring-border/60">
-          {ANALYTICS_RANGES.map((item) => (
-            <Link
-              key={item.key}
-              href={`/dashboard/analytics?range=${item.key}`}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                item.key === analytics.range
-                  ? "bg-primary text-on-primary shadow-sm"
-                  : "text-muted-foreground hover:bg-background hover:text-foreground"
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Analytics</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Queue performance and staff throughput metrics for{" "}
+          <span className="font-semibold text-foreground">{analytics.organization.name}</span>.
+        </p>
       </div>
 
+      {/* Comprehensive Filter Modal & Toolbar */}
+      <AnalyticsFilterModal
+        ranges={ANALYTICS_RANGES}
+        activeRange={analytics.range}
+        filterMode={analytics.filterMode}
+        selectedDates={analytics.selectedDates}
+        startDate={analytics.startDate}
+        endDate={analytics.endDate}
+        dateLabel={analytics.dateLabel}
+        workingDaysOnly={analytics.workingDaysOnly}
+        selectedDaysOfWeek={analytics.selectedDaysOfWeek}
+      />
+
+      {/* Summary stat cards */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
           label="Tickets in range"
@@ -104,11 +136,39 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
         />
       </div>
 
+      {/* Hourly Volume Distribution Chart */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div>
+            <CardTitle>Hourly Volume</CardTitle>
+            <CardDescription>
+              Distribution throughout the day ({activeRangeText}
+              {analytics.workingDaysOnly ? " · Mon–Fri" : ""})
+            </CardDescription>
+          </div>
+          {analytics.peakHour && analytics.peakHour.count > 0 && (
+            <div className="text-right text-xs font-medium text-muted-foreground">
+              Peak: <span className="font-bold text-foreground">{analytics.peakHour.label}</span>
+            </div>
+          )}
+        </CardHeader>
+        <CardContent>
+          <HourlyVolumeChart
+            hourlyVolume={analytics.hourlyVolume}
+            peakHour={analytics.peakHour}
+            totalTickets={analytics.metrics.ticketsInRange}
+          />
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
         <Card>
           <CardHeader>
             <CardTitle>Ticket status</CardTitle>
-            <CardDescription>Distribution for the selected range</CardDescription>
+            <CardDescription>
+              Status distribution ({activeRangeText}
+              {analytics.workingDaysOnly ? " · Mon–Fri" : ""})
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <StatusBreakdown
@@ -203,7 +263,10 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
       <Card>
         <CardHeader>
           <CardTitle>Recent ticket activity</CardTitle>
-          <CardDescription>Latest tickets in the selected range</CardDescription>
+          <CardDescription>
+            Latest tickets ({activeRangeText}
+            {analytics.workingDaysOnly ? " · Mon–Fri" : ""})
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {analytics.recentTickets.length > 0 ? (
@@ -244,7 +307,7 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
             </div>
           ) : (
             <p className="text-sm text-muted-foreground py-8 text-center">
-              No ticket activity for this range.
+              No ticket activity for this timeframe.
             </p>
           )}
         </CardContent>
